@@ -103,3 +103,7 @@ final class MonthPersonalization: NSManagedObject {
         return request
     }
 }
+
+// Used by `.sheet(item:)`; `id` is the UUID attribute above.
+extension EventEntity: Identifiable {}
+extension ThreadEntity: Identifiable {}
