@@ -196,6 +196,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Christina;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Christina uses the camera to attach a photo to something you recorded.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Christina lets you choose photos to attach to events and months.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -226,6 +228,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Christina;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Christina uses the camera to attach a photo to something you recorded.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Christina lets you choose photos to attach to events and months.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
