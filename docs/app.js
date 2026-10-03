@@ -314,6 +314,15 @@ function lookFor(key) {
   };
 }
 const lookIsEmpty = (l) => !l.title && !l.palette.length && !l.images.length;
+
+/** A month with a palette is recolored with it: each category gets the palette
+ *  color at its position (cycling), and threads take palette colors in turn. */
+function categoryHex(name, palette) {
+  if (!palette || !palette.length) return catOf(name).hex;
+  const index = CATEGORIES.findIndex((c) => c.name === name);
+  return palette[(index === -1 ? CATEGORIES.length - 1 : index) % palette.length];
+}
+const threadHex = (thread, index, palette) => (palette && palette.length ? palette[index % palette.length] : thread.color);
 const monthImageKey = (month, name) => `months/${month}/${name}`;
 
 function monthsWithContent() {
@@ -445,17 +454,18 @@ function hydrateImages(root) {
 const paletteDots = (colors, size = 10) =>
   colors.length ? `<div class="palette">${colors.map((c) => `<i style="background:#${esc(c)};width:${size}px;height:${size}px"></i>`).join('')}</div>` : '';
 
-const catIcon = (name, size = 32) => {
+const catIcon = (name, size = 32, palette = null) => {
   const c = catOf(name);
-  return `<span class="cat-icon" style="width:${size}px;height:${size}px;background:#${c.hex}2e;color:#${c.hex}">${icon(c.icon)}</span>`;
+  const hex = categoryHex(name, palette);
+  return `<span class="cat-icon" style="width:${size}px;height:${size}px;background:#${hex}2e;color:#${hex}">${icon(c.icon)}</span>`;
 };
 
 const badge = (name) => (name ? `<span class="badge" style="background:#${catOf(name).hex}33">${esc(name)}</span>` : '');
 
-function eventRow(e, readOnly) {
+function eventRow(e, readOnly, palette = null) {
   const line = e.duration != null ? `${e.title} — ${e.duration} min` : e.title;
   return `<button class="row" data-action="openEvent" data-id="${e.id}" data-readonly="${readOnly ? 1 : 0}">
-    ${catIcon(e.category)}
+    ${catIcon(e.category, 32, palette)}
     <span class="row-text"><span class="body">${esc(line)}</span><span class="caption">${esc(timestamp(new Date(e.dateOccurred)))}</span></span>
   </button>`;
 }
@@ -483,7 +493,7 @@ function viewHome() {
     ${look.images.length ? `<div class="strip">${look.images.map((n) => `<div class="sq"><img data-file="${esc(monthImageKey(key, n))}" alt=""></div>`).join('')}</div>` : ''}
     ${
       events.length
-        ? `<div class="list">${events.map((e) => eventRow(e, false)).join('')}</div>`
+        ? `<div class="list">${events.map((e) => eventRow(e, false, look.palette)).join('')}</div>`
         : `<div class="blank">${esc(monthName(key))} is blank. Tap + to add something.</div>`
     }
   </div>`;
@@ -546,10 +556,12 @@ function barSegments(days, threads, visibleStartYMD) {
   return { segments: candidates, lanes: laneEnds.length };
 }
 
-function calendarGrid(weeks, startDate, endDate, accentHex, readOnly) {
+function calendarGrid(weeks, startDate, endDate, palette, readOnly) {
+  const accentHex = palette[0];
   const startYMD = ymd(startDate);
   const lastYMD = ymd(addDays(endDate, -1));
   const threads = threadsOverlapping(startYMD, lastYMD);
+  const barHex = new Map(threads.map((t, i) => [t.id, threadHex(t, i, palette)]));
   const byDay = {};
   for (const e of eventsBetween(startDate, endDate).sort((a, b) => a.dateOccurred.localeCompare(b.dateOccurred))) {
     const k = ymd(new Date(e.dateOccurred));
@@ -580,7 +592,7 @@ function calendarGrid(weeks, startDate, endDate, accentHex, readOnly) {
               const label = s.label
                 ? `<div class="bar-label" style="left:${left};top:${y}px;width:calc(${s.labelEnd - s.first + 1} * 100% / 7 - 6px)">${esc(s.label)}</div>`
                 : '';
-              return `${label}<div class="bar" style="left:${left};top:${y + 17}px;width:calc(${s.last - s.first + 1} * 100% / 7 - 6px);background:#${esc(s.t.color)}"></div>`;
+              return `${label}<div class="bar" style="left:${left};top:${y + 17}px;width:calc(${s.last - s.first + 1} * 100% / 7 - 6px);background:#${esc(barHex.get(s.t.id))}"></div>`;
             })
             .join('')}</div>`
         : '';
@@ -589,7 +601,7 @@ function calendarGrid(weeks, startDate, endDate, accentHex, readOnly) {
           const items = d ? byDay[ymd(d)] || [] : [];
           const readonlyFlag = readOnly ? 1 : -1;
           return `<div class="cell">${items
-            .map((e) => `<button class="ev-dot" data-action="openEvent" data-id="${e.id}" data-readonly="${readonlyFlag}" aria-label="${esc(e.title)}"><i style="background:#${catOf(e.category).hex}"></i></button>`)
+            .map((e) => `<button class="ev-dot" data-action="openEvent" data-id="${e.id}" data-readonly="${readonlyFlag}" aria-label="${esc(e.title)}"><i style="background:#${categoryHex(e.category, palette)}"></i></button>`)
             .join('')}</div>`;
         })
         .join('');
@@ -605,7 +617,7 @@ function monthField(lookKey, startDate, endDate, weeks, readOnly) {
   return `
     ${look.title ? `<div class="body muted">${esc(look.title)}</div>` : ''}
     ${paletteDots(look.palette)}
-    ${calendarGrid(weeks, startDate, endDate, look.palette[0], readOnly)}
+    ${calendarGrid(weeks, startDate, endDate, look.palette, readOnly)}
     ${look.images.length ? `<div class="img-grid">${look.images.map((n) => `<div class="sq"><img data-file="${esc(monthImageKey(lookKey, n))}" alt=""></div>`).join('')}</div>` : ''}`;
 }
 

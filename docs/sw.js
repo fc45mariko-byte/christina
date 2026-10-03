@@ -1,6 +1,6 @@
 // Offline support: the app shell is cached so Christina opens without a connection.
 // Bump VERSION whenever app files change so phones pick up the update.
-const VERSION = 'christina-v1';
+const VERSION = 'christina-v2';
 const SHELL = [
   './',
   'index.html',
