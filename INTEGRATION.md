@@ -22,7 +22,7 @@ docs/
     main.js              boot: register modules, open DB, render
     core/                knows nothing about specific modules
       registry.js        modules register tabs, screens, actions, validators
-      router/state.js    one navigation stack per tab
+      state.js           one navigation stack per tab
       render.js          render loop
       events.js          delegated data-action / data-bind / data-change / data-file-input / data-longpress
       db.js              IndexedDB
