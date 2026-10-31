@@ -960,7 +960,7 @@ V.onboard={nav:false,html(p){
     <div class="chips" style="margin-top:10px">${[...OB_CATS,...extra].map(c=>`<button class="chip ${p.cats.includes(c)?'on':''}" data-a="obCat" data-v="${esc(c)}" aria-pressed="${p.cats.includes(c)}">${esc(c)}</button>`).join('')}<button class="chip dashed" data-a="obCustom">+ Something else</button></div>
     <div class="grow"></div><div class="foot"><button class="btn" data-a="obStep" data-v="3">Continue</button></div></div>`;}
   if(p.step===3)return `<div class="ob"><h1>Body Oracle</h1><div class="grow"></div><h2>You’re ready.</h2><p class="ob-p">You can change everything later.</p><div class="grow"></div><div class="foot"><button class="btn" data-a="obEnter">Enter Body Oracle</button></div></div>`;
-  return `<div class="ob"><div class="grow"></div><h1 class="ob-brand">Body Oracle</h1><p class="ob-p">Prepare something now for a version of yourself who will need it later.</p><p class="ob-p ob-s">Rituals for the moments that come back. Words for the states you know. A record of what happened.</p><div class="grow"></div><div class="foot"><button class="btn" data-a="obStep" data-v="2">Continue</button></div></div>`;}};
+  return `<div class="ob"><div class="grow"></div><h1 class="ob-brand">Body Oracle</h1><p class="ob-p">Prepare something now for a version of yourself who will need it later.</p><p class="ob-p ob-s">Rituals for the moments that come back. Words for the states you know. A record of what happened.</p><div class="grow"></div><div class="foot" style="flex-direction:column"><button class="btn" data-a="obStep" data-v="2">Continue</button><label class="btn ghost" for="ob-import">Restore from a backup<input type="file" id="ob-import" accept="application/json,.json" hidden></label><p class="fine" style="margin:4px 0 0">Have a backup from the Body Oracle app? Restore it here, before anything else is set up.</p></div></div>`;}};
 function defaultSettings(){return{id:'settings',type:'settings',name:'Body Oracle',accent:'#f2f2f3',cards:'filled',corners:'soft',heroImageId:null,heroText:'A quieter day is still a productive day.',currentIntentionId:null,oracleImages:{},oracleArchetypes:false,
   palette:DEFAULT_PALETTE.map(([name,color])=>({id:uid(),name,color})),
   moments:MOMENTS.slice(),situations:SITUATIONS.slice(),tonight:null,
@@ -1251,7 +1251,7 @@ async function boInit(){
     else if(el.dataset.scolor){S.settings[el.dataset.scolor]=el.value;applyTheme();saveSettingsSoon();}
     else if(el.id==='arch-q'){AS.q=el.value;$('#arch-res').innerHTML=archResults();watchSneaks();}});
   document.addEventListener('timeupdate',e=>{const v=e.target;if(v.classList&&v.classList.contains('sneak')&&v.currentTime>SNEAK_SECS)v.currentTime=0;},true);
-  document.addEventListener('change',e=>{if(e.target.id==='import-file'){importData(e.target.files[0]);e.target.value='';}});
+  document.addEventListener('change',e=>{if(e.target.id==='import-file'||e.target.id==='ob-import'){importData(e.target.files[0]);e.target.value='';}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#bo-sheet').hidden)closeSheet();else if(!$('#bo-radial').hidden)closeRadial();}});
 })();
 
