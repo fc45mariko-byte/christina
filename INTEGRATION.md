@@ -76,7 +76,7 @@ Insights are computed on demand and always link to the records they were counted
 7. **Calendar events, Tasks, Projects, Habits.** — done (built before step 6 so the dashboard has real data)
 8. **Insights.** — done
 9. **Appearance and customisation settings.** — done
-10. Tests on phone and desktop sizes, preview deploy, cut-over.
+10. **Tests on phone and desktop sizes, cut-over.** — done (no separate preview host was chosen; the integration branch was tested locally and merged into `main`)
 
 ## Decisions
 
@@ -350,3 +350,34 @@ Verified: each appearance option (computed colours and fonts checked), applied o
 Body Oracle following the accent, reset; category add / duplicate refused / reorder / rename / delete with fallback /
 Other protected; tag rename and delete; hiding sections; reminders screen; backup → change → restore round trip;
 erase everything; no console errors.
+
+## Step 10 — validation and cut-over
+
+- **Every section at 320, 390, 768 and 1200 px, light and dark** (88 screens): no horizontal overflow, no button
+  without a label, no console errors.
+- **Offline:** the service worker caches the app; with the network off it opens with its data. (It also registers on
+  `localhost`, for testing.)
+- **All suites re-run on the final code:** Journal and shared records (17 checks), dashboard (15), calendar / tasks /
+  projects / habits (16), Insights (8), settings (24), Body Oracle (25), Body Oracle backup restore (15), automatic import
+  from the old Body Oracle (9), navigation shell — all passing.
+- **Upgrade paths for an existing phone:** data made with the live version (step 3), and with the original Christina
+  (database v1), then the final version loaded at the same address: events, thread, personalized month and photo all
+  present; the first open may still show the cached older version, the next one runs the new version.
+- Merged into `main` (GitHub Pages builds from `docs/` on `main`).
+
+## Known limitations
+
+- **No lock-screen notifications.** Reminders show inside the app (Overview and when it opens). An iPhone web app can
+  only notify through a push server, and Christina has no server.
+- **One device.** No sync between devices; move data with Export backup → Restore. Clearing the site's data or removing
+  the app deletes everything that was not exported.
+- **Large videos in Body Oracle** (up to 250 MB each) make backup files large; the JSON backup holds media as text and
+  very large libraries may not export on a phone with little memory.
+- **Plans don't repeat.** There is no recurrence for plans or tasks yet.
+- **Text size** follows the design's fixed sizes; the system "Larger Text" setting is not applied.
+- **The Body Oracle site** (`bodyoracle` repository) is unchanged and still serves the original Body Oracle. Its data
+  comes into Christina through its backup file, or automatically if the combined app is ever served at that address
+  (see "Deployment at the Body Oracle address").
+- **Body Oracle's own appearance settings** (accent, cards, corners) stay inside Body Oracle.
+- **Records added in Body Oracle before it was opened** get their full list titles (e.g. state names) the first time
+  Body Oracle is opened.
