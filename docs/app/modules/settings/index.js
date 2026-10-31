@@ -52,7 +52,7 @@ function viewCategories() {
     <div class="settings-list">${data.categories.map(
       (c) => `<div class="settings-row">${catIcon(c.id, 28)}<span class="grow">${esc(c.name)}</span><span class="caption">#${esc(c.color)}</span></div>`
     ).join('')}</div>
-    <p class="footnote">Preset list. Custom categories are not in this build.</p>
+    <p class="footnote">To add, rename, recolor or reorder categories, open Body Oracle → Settings → Categories. They are shared across Christina.</p>
   </div>`;
 }
 

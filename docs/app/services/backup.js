@@ -68,7 +68,8 @@ async function deliver(file) {
 async function buildBackup() {
   const files = {};
   for (const [key, record] of await allFiles()) {
-    if (record && record.data) files[key] = await blobToDataURL(new Blob([record.data], { type: record.type || 'image/jpeg' }));
+    if (record instanceof Blob) files[key] = await blobToDataURL(record);
+    else if (record && record.data) files[key] = await blobToDataURL(new Blob([record.data], { type: record.type || 'image/jpeg' }));
   }
   return {
     format: BACKUP_FORMAT,
@@ -77,6 +78,8 @@ async function buildBackup() {
     schemaVersion: DB_VERSION,
     prefs: readPrefs(),
     stores: Object.fromEntries(await Promise.all(DATA_STORES.map(async (name) => [name, await DB.getAll(name)]))),
+    // Module settings kept in meta (e.g. Body Oracle's vocabulary, palette and home layout).
+    settings: (await DB.getAll('meta')).filter((m) => m.key !== 'schema'),
     files,
   };
 }

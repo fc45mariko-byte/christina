@@ -2,7 +2,7 @@
 import { esc, ymd, rangeText } from '../../core/util.js';
 import { DB, data } from '../../core/db.js';
 import { THREAD_COLORS } from '../../core/catalog.js';
-import { threadById, isPastMonth, recordMonth, newestFirst } from '../../core/queries.js';
+import { threadById, isPastMonth, recordMonth, newestFirst, isActivity } from '../../core/queries.js';
 import { state, push, back } from '../../core/state.js';
 import { render } from '../../core/render.js';
 import { register, registry } from '../../core/registry.js';
@@ -14,7 +14,8 @@ function relevanceSorted(list) {
     const ra = rank(a);
     const rb = rank(b);
     if (ra !== rb) return ra - rb;
-    if (ra === 0) return b.startDate.localeCompare(a.startDate);
+    // Threads without dates (from Body Oracle) count as ongoing and sort after dated ones.
+    if (ra === 0) return (b.startDate || '').localeCompare(a.startDate || '');
     if (ra === 1) return a.startDate.localeCompare(b.startDate);
     return (b.endDate || '').localeCompare(a.endDate || '');
   });
@@ -49,7 +50,7 @@ function viewThreads() {
 function viewThreadDetail(id) {
   const t = threadById(id);
   if (!t) return `${navbar('')}<div class="page"><div class="blank">This thread was removed.</div></div>`;
-  const linked = data.records.filter((e) => (e.threadIds || []).includes(t.id) && !e.archived).sort(newestFirst);
+  const linked = data.records.filter((e) => isActivity(e) && (e.threadIds || []).includes(t.id) && !e.archived).sort(newestFirst);
   return `${navbar('', `<button class="nav-btn" data-action="editThread" data-id="${t.id}">Edit</button>`)}
   <div class="page">
     <div class="row-field" style="justify-content:flex-start">
@@ -83,7 +84,7 @@ function viewThreadEdit() {
     <div class="section"><span class="label">Title</span><input class="field" type="text" data-bind="te.title" value="${esc(f.title)}" autocomplete="off"></div>
     <div class="section"><span class="label">Category</span>${chips('te', f.categoryId)}</div>
     <div class="section"><span class="label">Color</span>${swatches('te', f.color, colors)}</div>
-    <div class="section"><span class="label">Start date</span><input class="field" type="date" data-bind="te.start" data-rerender="1" value="${esc(f.start)}"></div>
+    <div class="section"><span class="label">Start date</span><input class="field" type="date" data-bind="te.start" data-rerender="1" value="${esc(f.start)}">${f.start ? '' : '<span class="caption">No dates: this thread is not drawn on the calendar.</span>'}</div>
     <div class="section"><span class="label">End date</span>
       <div class="field row-field"><span>No end date (ongoing)</span>
         <label class="toggle"><input type="checkbox" data-bind="te.ongoing" data-rerender="1" ${f.ongoing ? 'checked' : ''}><span></span></label>
@@ -140,7 +141,16 @@ const actions = {
   editThread(el) {
     const t = threadById(el.dataset.id);
     if (!t) return;
-    state.te = { id: t.id, title: t.title, categoryId: data.categories.some((c) => c.id === t.categoryId) ? t.categoryId : null, color: t.color, start: t.startDate, end: t.endDate || t.startDate, ongoing: !t.endDate };
+    state.te = {
+      id: t.id,
+      title: t.title,
+      categoryId: data.categories.some((c) => c.id === t.categoryId) ? t.categoryId : null,
+      hadCategory: !!t.categoryId,
+      color: t.color,
+      start: t.startDate || '',
+      end: t.endDate || t.startDate || '',
+      ongoing: !t.endDate,
+    };
     push({ name: 'threadEdit', id: t.id });
   },
   async saveThreadEdit() {
@@ -151,7 +161,7 @@ const actions = {
     if (title.toLowerCase() !== t.title.toLowerCase() && data.threads.some((x) => x.id !== t.id && x.title.toLowerCase() === title.toLowerCase())) {
       if (!confirm(`A thread named “${title}” already exists.\n\nBoth threads will be kept separately.`)) return;
     }
-    const ok = await updateThread(t, { title, categoryId: f.categoryId, color: f.color, startDate: f.start, endDate: f.ongoing ? null : f.end });
+    const ok = await updateThread(t, { title, categoryId: f.categoryId, color: f.color, startDate: f.start || null, endDate: f.start && !f.ongoing ? f.end : null });
     if (ok) back();
   },
   threadMenu(el) {
@@ -201,7 +211,8 @@ register({
   validators: {
   threadEdit() {
     const f = state.te;
-    return !!f && f.title.trim() !== '' && !!f.categoryId && !!f.start && (f.ongoing || (!!f.end && f.end >= f.start));
+    // A thread that came without dates or a category (from Body Oracle) can stay that way.
+    return !!f && f.title.trim() !== '' && (!!f.categoryId || !f.hadCategory) && (!f.start || f.ongoing || (!!f.end && f.end >= f.start));
   },
   },
   bindHook(el) {

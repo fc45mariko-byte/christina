@@ -26,7 +26,13 @@ const ICON_PATHS = {
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
 };
 
-function icon(name, cls = '') {
-  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ''}</svg>`;
+/** Icons other modules bring (Body Oracle's set). Christina's own names win when both define one. */
+const EXTRA_PATHS = {};
+function extendIcons(paths) {
+  for (const [k, v] of Object.entries(paths)) if (!ICON_PATHS[k] && !EXTRA_PATHS[k]) EXTRA_PATHS[k] = v;
 }
-export { icon };
+
+function icon(name, cls = '') {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || EXTRA_PATHS[name] || ''}</svg>`;
+}
+export { icon, extendIcons, ICON_PATHS };

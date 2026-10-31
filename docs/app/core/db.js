@@ -4,6 +4,8 @@ import { DB_NAME, DB_VERSION, upgrade } from './schema.js';
 
 const DB = {
   db: null,
+  /** Counts completed writes, so a module can tell when its in-memory copy is out of date. */
+  generation: 0,
 
   open() {
     return new Promise((resolve, reject) => {
@@ -38,7 +40,10 @@ const DB = {
   write(stores, work) {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(stores, 'readwrite');
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        this.generation++;
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error || new Error('The change was not saved.'));
       try {
@@ -59,7 +64,9 @@ async function fileURL(key) {
   if (fileURLs.has(key)) return fileURLs.get(key);
   const record = await DB.get('files', key);
   if (!record) return null;
-  const url = URL.createObjectURL(new Blob([record.data], { type: record.type }));
+  // Christina stores { type, data }; Body Oracle media is stored as a Blob.
+  const blob = record instanceof Blob ? record : new Blob([record.data], { type: record.type });
+  const url = URL.createObjectURL(blob);
   fileURLs.set(key, url);
   return url;
 }

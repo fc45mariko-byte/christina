@@ -3,7 +3,7 @@
 import { esc, $ } from './core/util.js';
 import { DB, data } from './core/db.js';
 import { state, back } from './core/state.js';
-import { register } from './core/registry.js';
+import { register, registry } from './core/registry.js';
 import { render } from './core/render.js';
 import { bindEvents } from './core/events.js';
 import { renderNav, WIDE } from './shell/nav.js';
@@ -17,6 +17,7 @@ import './modules/records/index.js';
 import './modules/threads/index.js';
 import './modules/archive/index.js';
 import './modules/settings/index.js';
+import './modules/body-oracle/bo.js';
 
 // Navigation shared by every screen.
 register({
@@ -24,7 +25,11 @@ register({
   actions: {
     tab(el) {
       const tab = el.dataset.tab;
-      if (state.tab === tab) state.stacks[tab] = [];
+      if (state.tab === tab) {
+        state.stacks[tab] = [];
+        const item = registry.nav.find((n) => n.id === tab);
+        if (item && item.reset) item.reset(); // back to the section's own start
+      }
       state.tab = tab;
       render();
     },

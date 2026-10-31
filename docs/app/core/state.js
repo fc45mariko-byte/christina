@@ -26,7 +26,7 @@ function newThreadForm() {
 state.ef = newEventForm();
 state.tf = newThreadForm();
 
-const stack = () => state.stacks[state.tab];
+const stack = () => (state.stacks[state.tab] ||= []);
 const topView = () => stack()[stack().length - 1];
 function push(view) {
   stack().push(view);

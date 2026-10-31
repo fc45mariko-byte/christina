@@ -1,6 +1,6 @@
 // Offline support: the app shell is cached so Christina opens without a connection.
 // Bump VERSION whenever app files change so phones pick up the update.
-const VERSION = 'christina-v5';
+const VERSION = 'christina-v6';
 const SHELL = [
   './',
   'index.html',
@@ -22,6 +22,9 @@ const SHELL = [
   'app/main.js',
   'app/modules/add/index.js',
   'app/modules/archive/index.js',
+  'app/modules/body-oracle/bo.js',
+  'app/modules/body-oracle/body-oracle.css',
+  'app/modules/body-oracle/store.js',
   'app/modules/calendar/grid.js',
   'app/modules/calendar/index.js',
   'app/modules/overview/index.js',

@@ -7,7 +7,9 @@ import { refreshValidity } from './validation.js';
 function render() {
   const main = $('#main');
   const view = topView();
-  const key = `${state.tab}:${view ? JSON.stringify(view) : 'root'}`;
+  const moduleId = view && view.name === 'module' ? view.id : state.tab;
+  const inner = registry.tabKeys[moduleId] ? registry.tabKeys[moduleId]() : '';
+  const key = `${state.tab}:${view ? JSON.stringify(view) : 'root'}:${inner}`;
   const sameView = main.dataset.view === key;
   const scroll = main.scrollTop;
   main.innerHTML = view ? renderPushed(view) : renderRoot();

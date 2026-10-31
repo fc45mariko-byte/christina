@@ -6,6 +6,9 @@ import { OTHER_CATEGORY_ID } from './catalog.js';
 // ------------------------------------------------------------ Records
 
 const recordById = (id) => data.records.find((r) => r.id === id);
+/** Christina's own screens (Overview, Calendar, Archive, Threads) show activities; other kinds join them in the
+ *  shared Archive/Journal step. */
+const isActivity = (r) => r.kind === 'activity';
 const recordMonth = (r) => monthKeyOf(new Date(r.occurredAt));
 const isPastMonth = (key) => key < currentMonth();
 
@@ -19,7 +22,7 @@ function recordsBetween(start, end) {
   const s = start.getTime();
   const t = end.getTime();
   return data.records.filter((r) => {
-    if (r.archived) return false;
+    if (r.archived || !isActivity(r)) return false;
     const time = new Date(r.occurredAt).getTime();
     return time >= s && time < t;
   });
@@ -68,13 +71,13 @@ const lookIsEmpty = (l) => !l.title && !l.palette.length && !l.images.length;
 const monthImageKey = (month, name) => `months/${month}/${name}`;
 
 function monthsWithContent() {
-  const set = new Set(data.records.filter((r) => !r.archived).map(recordMonth));
+  const set = new Set(data.records.filter((r) => !r.archived && isActivity(r)).map(recordMonth));
   for (const key of Object.keys(data.months)) if (!lookIsEmpty(lookFor(key))) set.add(key);
   return [...set].sort();
 }
 
 export {
-  recordById, recordMonth, isPastMonth, recordCategoryId, recordThreadId, recordPhoto, recordDuration, recordsBetween,
+  isActivity, recordById, recordMonth, isPastMonth, recordCategoryId, recordThreadId, recordPhoto, recordDuration, recordsBetween,
   newestFirst, categoryById, categoryHex, threadById, threadsOverlapping, threadHex, lookFor, lookIsEmpty, monthImageKey,
   monthsWithContent,
 };

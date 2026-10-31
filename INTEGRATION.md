@@ -33,7 +33,8 @@ docs/
     ui/                  tokens.css, base.css, components.css, components.js, icons.js
     modules/
       overview/  calendar/  add/  records/  threads/  archive/  settings/
-      (planned) journal/  tasks/  projects/  habits/  body-oracle/  insights/
+      body-oracle/       bo.js (the module), store.js (storage adapter), body-oracle.css
+      (planned) journal/  tasks/  projects/  habits/  insights/
 ```
 
 Each module registers itself with `register({ tabs, screens, actions, changeActions, fileActions, validators })`.
@@ -66,7 +67,7 @@ Insights are computed on demand and always link to the records they were counted
 1. **Split Christina into modules with no change in behaviour; add export.** — done
 2. **Database v2 and migration of existing data (old data kept in `legacy`).** — done
 3. **Shell: tab bar with four user-chosen slots + More, More screen, desktop sidebar.** — done (the + sheet comes with the modules that add to it)
-4. Port Body Oracle as a module, restyled; import from its backup file.
+4. **Port Body Oracle as a module, restyled; import from its backup file.** — done
 5. One Archive and one search; Journal module.
 6. Dashboard widgets, sizes and layouts.
 7. Calendar events, Tasks, Projects, Habits.
@@ -142,3 +143,52 @@ Verified: at desktop width the 45-step side-by-side session renders the same pag
 step except the new "Tab bar" row in Settings; the v1 → v2 upgrade test still shows 11 identical screens; phone flows
 (More, opening and leaving sections, changing and swapping slots, reload, saving into an unpinned section, resizing
 between phone and desktop, dark mode) work with no console errors.
+
+## Step 4 — what changed
+
+Body Oracle is a section of Christina (**More → Body Oracle**, or pinned to a tab slot). Its code is in
+`docs/app/modules/body-oracle/`:
+
+- `bo.js` — Body Oracle's own code, kept as it was, with these integration changes:
+  - its screens render inside Christina's page; its four sections (Today, Rituals, Prayers, Archive) are a
+    segmented control at the top, with a **+** that opens its add menu as a list sheet (instead of the radial)
+  - inputs use `data-bo`, overlays use `#bo-sheet` / `#bo-modal`, so nothing clashes with Christina's own
+  - **past months are read-only**: an entry from an earlier month shows "Archived", with no Edit or Delete
+  - **archetype readings are opt-in**: the Oracle shows plain counts by default; Settings → Oracle readings
+    turns the archetype reflection and question on
+  - "Erase" erases Body Oracle's data only; Christina's events, threads and categories are kept
+  - restoring a Body Oracle backup merges categories and threads that have the same name as existing ones
+- `store.js` — adapter between Body Oracle's item shapes and Christina's shared database:
+  entries → `records`, threads and categories → the shared stores, library items → their stores,
+  settings → `meta` (`bodyOracle`), photos and videos → `files` as `media/<id>`.
+  Every write updates Christina's in-memory data too; when Christina changes something, Body Oracle reloads.
+- `body-oracle.css` — Body Oracle's styles scoped under `.m-bo`, its colour tokens mapped onto Christina's
+  (light and dark), and an adaptation layer for Christina's type scale (24/16/14/12), segmented controls,
+  chips, fields, buttons, sheets and radii. Christina's own `.card`, `.row`, `.chip`, `.field`, `.list`,
+  `.dot`, `.tile`, `.cal`, `.day`, `.dots`, `.swatches` rules no longer reach inside the module.
+
+Shared with Christina:
+- **Categories**: one list. Body Oracle → Settings → Categories adds, renames, recolours and reorders them;
+  Christina's Add uses them. "Other" cannot be deleted. Onboarding does not duplicate an existing name.
+- **Threads**: one list. Body Oracle's threads appear in Christina's Threads with "No dates" until dates are set;
+  a thread without dates is not drawn on the calendar. Renaming on either side shows on the other.
+- **Backup**: Christina's backup now includes Body Oracle's records, library, settings and media.
+  Body Oracle's own backup export still works from its Settings.
+
+Not yet: Body Oracle's records are not shown on Christina's Overview, Calendar or Archive (they stay in Body
+Oracle's own Archive, timeline and calendar). Bringing them together is step 5.
+
+**To bring in Body Oracle data from the old app:** in the old Body Oracle, Settings → Backup → Export a backup.
+In Christina, More → Body Oracle → (settings icon) → Backup → Restore from a backup, and choose that file.
+
+Verified (Chromium, phone and desktop sizes, light and dark):
+- Body Oracle flows: onboarding, note, body map observation with sensation and intensity, state, photo with the
+  cropper, Archive grid / search / calendar, entry view, rituals and run mode, prayers, settings, shared categories,
+  Oracle counts and archetypes, past-month lock, reload persistence — no console errors.
+- Import: a backup made with the original Body Oracle app (custom category, photo, body observation, state) restored
+  into a Christina that already had events: 3 entries, photo shown, searchable, categories and threads merged by
+  name with links intact, Christina's event kept, Christina backup holds both, Body Oracle export still works,
+  "Erase Body Oracle data" keeps Christina's event.
+- Christina: the 45-step side-by-side session at desktop width shows the same page content as step 3 (only the
+  Categories footnote changed; the remaining pixel differences are the clock minute and toast timing); the v1 → v2
+  upgrade test still passes.

@@ -11,6 +11,7 @@ const registry = {
   bindHooks: [], // (el) => void, run before a data-rerender re-render
   nav: [], // { id, label, icon, order } — a module's place in the tab bar / sidebar / More
   chrome: [], // () => void, redraws navigation after every render
+  tabKeys: {}, // tab id -> () => string: identifies the module's own inner screen, so scroll resets on change
 };
 
 function register(manifest) {
@@ -20,6 +21,7 @@ function register(manifest) {
   if (manifest.bindHook) registry.bindHooks.push(manifest.bindHook);
   if (manifest.nav) registry.nav.push(manifest.nav);
   if (manifest.chrome) registry.chrome.push(manifest.chrome);
+  Object.assign(registry.tabKeys, manifest.tabKeys || {});
 }
 
 export { registry, register };

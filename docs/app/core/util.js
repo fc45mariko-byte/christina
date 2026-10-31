@@ -46,7 +46,7 @@ const monthTitle = (key) => F.monthYear.format(monthStart(key)); // "October 202
 const monthShort = (key) => F.shortMonthYear.format(monthStart(key)); // "Oct 2026"
 const monthName = (key) => F.monthName.format(monthStart(key)); // "October"
 const timestamp = (d) => `${F.weekdayDayMonth.format(d)} · ${F.time.format(d)}`;
-const rangeText = (start, end) => `${F.dayMonth.format(parseYMD(start))} – ${end ? F.dayMonth.format(parseYMD(end)) : 'ongoing'}`;
+const rangeText = (start, end) => !start ? 'No dates' : `${F.dayMonth.format(parseYMD(start))} – ${end ? F.dayMonth.format(parseYMD(end)) : 'ongoing'}`;
 
 function brightness(hex) {
   const v = parseInt(hex, 16);
