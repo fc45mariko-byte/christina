@@ -16,6 +16,9 @@ import { DB, data } from '../../core/db.js';
 import { OTHER_CATEGORY_ID } from '../../core/catalog.js';
 
 const MEDIA = 'media/';
+/** Records that belong to other sections (Christina's events, the Journal). Body Oracle never lists or erases them. */
+const NOT_BODY_ORACLE = new Set(['activity', 'journal']);
+const isBodyOracleRecord = (r) => !NOT_BODY_ORACLE.has(r.kind);
 const LIBRARY = { state: 'states', ritual: 'rituals', prayer: 'prayers', intention: 'intentions', sigil: 'sigils', oracle: 'oracleReadings' };
 const LIBRARY_TYPE = Object.fromEntries(Object.entries(LIBRARY).map(([type, store]) => [store, type]));
 const TIME_FIELDS = ['createdAt', 'updatedAt', 'date', 'lastPerformedAt', 'lastReadAt'];
@@ -171,7 +174,7 @@ const BODB = {
     const [records, threads, categories, ...library] = await Promise.all(stores.map((s) => DB.getAll(s)));
     const settings = await DB.get('meta', 'bodyOracle');
     const items = [
-      ...records.filter((r) => r.kind !== 'activity').map(entryFromRecord),
+      ...records.filter(isBodyOracleRecord).map(entryFromRecord),
       ...threads.map(threadToBO),
       ...categories.map(categoryToBO),
     ];
@@ -203,7 +206,9 @@ const BODB = {
       };
     } else if (LIBRARY[x.type]) {
       const store = LIBRARY[x.type];
-      await DB.write([store], (tx) => tx.objectStore(store).put(toStored(x)));
+      const stored = toStored(x);
+      await DB.write([store], (tx) => tx.objectStore(store).put(stored));
+      if (x.type === 'state') after = () => upsert(data.states, stored); // the Overview "How are you?" widget
     } else {
       throw new Error(`Unknown item type: ${x.type}`);
     }
@@ -225,6 +230,7 @@ const BODB = {
     data.records = data.records.filter((r) => r.id !== id);
     data.threads = data.threads.filter((t) => t.id !== id);
     data.categories = data.categories.filter((c) => c.id !== id);
+    data.states = data.states.filter((s) => s.id !== id);
     this.synced = DB.generation;
   },
 
@@ -260,19 +266,20 @@ const BODB = {
   },
 
   /** Erases Body Oracle's own data: its entries, library, settings and media.
-   *  Christina's activities, and the shared threads and categories, are kept. */
+   *  Christina's events, Journal entries, and the shared threads and categories, are kept. */
   async clear() {
     const library = Object.values(LIBRARY);
-    const ids = data.records.filter((r) => r.kind !== 'activity').map((r) => r.id);
+    const ids = data.records.filter(isBodyOracleRecord).map((r) => r.id);
     await DB.write(['records', 'meta', 'files', ...library], (tx) => {
       ids.forEach((id) => tx.objectStore('records').delete(id));
       library.forEach((s) => tx.objectStore(s).clear());
       tx.objectStore('meta').delete('bodyOracle');
       tx.objectStore('files').delete(IDBKeyRange.bound(MEDIA, `${MEDIA}￿`));
     });
-    data.records = data.records.filter((r) => r.kind === 'activity');
+    data.records = data.records.filter((r) => !isBodyOracleRecord(r));
+    data.states = [];
     this.synced = DB.generation;
   },
 };
 
-export { BODB, BO_STORES, mergeShared, recordFromEntry, entryFromRecord, threadFromBO, threadToBO, categoryFromBO, categoryToBO };
+export { BODB, BO_STORES, mergeShared, isBodyOracleRecord, recordFromEntry, entryFromRecord, threadFromBO, threadToBO, categoryFromBO, categoryToBO };

@@ -906,7 +906,7 @@ const SET={
    <p class="hint mt">Removing the app from your Home Screen deletes its data. Export a backup now and then.</p>`;},
   backup(){const n=all('entry').length;return `<div class="list card"><button class="row" data-a="exportData"><span class="row-i">${ico('archive',18)}</span><span class="row-m"><span class="row-t">Export a backup</span><span class="row-s">${plural(n,'entry','entries')} and ${plural(IMG.size,'image','images')}</span></span></button>
    <label class="row" for="import-file"><span class="row-i">${ico('undo',18)}</span><span class="row-m"><span class="row-t">Restore from a backup</span><span class="row-s">Replaces what is here now</span></span><input type="file" id="import-file" accept="application/json,.json" hidden></label></div>`;},
-  reset(){return `<p class="hint">Erase every Body Oracle entry, image, state, ritual, prayer, intention, sigil and setting on this device and start Body Oracle again from the beginning. Christina’s events, threads and categories are kept. This cannot be undone.</p><button class="btn ghost" data-a="eraseAll" style="color:var(--danger)">Erase Body Oracle data</button>`;},
+  reset(){return `<p class="hint">Erase every Body Oracle entry, image, state, ritual, prayer, intention, sigil and setting on this device and start Body Oracle again from the beginning. Christina’s events, journal, threads and categories are kept. This cannot be undone.</p><button class="btn ghost" data-a="eraseAll" style="color:var(--danger)">Erase Body Oracle data</button>`;},
 };
 const SET_TITLES={oracleSet:'Oracle readings',moments:'Moments & situations',categories:'Categories',states:'States',palette:'My palette',theme:'Theme',corners:'Corners',home:'Home layout',radial:'+ menu',body:'Body',data:'Data',backup:'Backup',reset:'Reset'};
 const setRow=(icon,label,act,val='',extra='')=>`<button class="row" data-a="${act}" ${extra}><span class="row-i">${icon}</span><span class="row-m">${label}</span><span class="row-v">${esc(val)}</span>${ico('chev',16)}</button>`;
@@ -1157,7 +1157,7 @@ const A={
   oracleSave:async()=>{const o=oracleReading();await save({id:uid(),type:'oracle',date:Date.now(),...o});render();toast('Saved to today');},
   delReading:t=>confirmSheet('Delete this reading?','Delete',async()=>{await removeItem(t.dataset.id);back();}),
   exportData:()=>exportData(),
-  eraseAll:()=>confirmSheet('Erase all Body Oracle data on this device? Christina’s events, threads and categories are kept. This cannot be undone.','Erase Body Oracle data',async()=>{await DB.clear();for(const m of[IMG,VID]){m.forEach(u=>URL.revokeObjectURL(u));m.clear();}await reloadItems();S.settings=defaultSettings();applyTheme();R.tab='home';R.stack=[{name:'onboard',params:{step:1,cats:[]}}];render();}),
+  eraseAll:()=>confirmSheet('Erase all Body Oracle data on this device? Christina’s events, journal, threads and categories are kept. This cannot be undone.','Erase Body Oracle data',async()=>{await DB.clear();for(const m of[IMG,VID]){m.forEach(u=>URL.revokeObjectURL(u));m.clear();}await reloadItems();S.settings=defaultSettings();applyTheme();R.tab='home';R.stack=[{name:'onboard',params:{step:1,cats:[]}}];render();}),
   obCat:t=>{const p=cur().params,v=t.dataset.v;const i=p.cats.indexOf(v);i>=0?p.cats.splice(i,1):p.cats.push(v);render();},
   obCustom:()=>inputSheet('Something else','',v=>{const p=cur().params;if(!p.cats.includes(v))p.cats.push(v);render();},{ph:'e.g. Sleep, Home, Germany',btn:'Add'}),
   obStep:t=>{cur().params.step=+t.dataset.v;render();},
@@ -1174,7 +1174,7 @@ async function exportData(){toast('Preparing backup…');try{const blobs={};for(
   const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
   catch(e){toast('Export did not work in this window. Open the app from your Home Screen and try again.');}}
 async function importData(f){if(!f)return;let backup;try{backup=JSON.parse(await f.text());if(backup.app!=='body-oracle'||!Array.isArray(backup.items))throw 0;}catch(e){toast('That file is not a Body Oracle backup.');return;}
-  confirmSheet(`Bring in ${plural(backup.items.filter(x=>x.type==='entry').length,'entry','entries')} from this Body Oracle backup? Body Oracle data here now is replaced. Christina’s events, threads and categories are kept.`,'Restore backup',async()=>{
+  confirmSheet(`Bring in ${plural(backup.items.filter(x=>x.type==='entry').length,'entry','entries')} from this Body Oracle backup? Body Oracle data here now is replaced. Christina’s events, journal, threads and categories are kept.`,'Restore backup',async()=>{
     toast('Restoring…');
     await DB.clear();for(const m of[IMG,VID]){m.forEach(u=>URL.revokeObjectURL(u));m.clear();}
     /* Categories and threads are shared with Christina: ones with an existing name are merged (store.js). */

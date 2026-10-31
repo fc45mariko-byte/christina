@@ -49,10 +49,10 @@ async function boot() {
   bindEvents();
   try {
     await DB.open();
-    const [records, threads, months, categories, tags, schedule, tasks, projects, habits, habitLogs] = await Promise.all(
-      ['records', 'threads', 'months', 'categories', 'tags', 'schedule', 'tasks', 'projects', 'habits', 'habitLogs'].map((store) => DB.getAll(store))
+    const [records, threads, months, categories, tags, schedule, tasks, projects, habits, habitLogs, states] = await Promise.all(
+      ['records', 'threads', 'months', 'categories', 'tags', 'schedule', 'tasks', 'projects', 'habits', 'habitLogs', 'states'].map((store) => DB.getAll(store))
     );
-    Object.assign(data, { tags, schedule, tasks, projects, habits, habitLogs });
+    Object.assign(data, { tags, schedule, tasks, projects, habits, habitLogs, states });
     data.records = records;
     data.categories = categories.sort((a, b) => a.order - b.order);
     data.threads = threads;

@@ -271,3 +271,17 @@ img[data-file]:not([src]) { visibility: hidden; }
 .hcell { display: block; width: 100%; aspect-ratio: 1; border-radius: 3px; padding: 0; }
 .pill { display: inline-flex; align-items: center; gap: 6px; }
 .pill svg { width: 16px; height: 16px; }
+
+/* ---------- Overview widgets ---------- */
+.wgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); align-items: start; }
+.wgrid > .wide { grid-column: 1 / -1; }
+.w { min-width: 0; display: flex; flex-direction: column; gap: var(--gap); background: var(--surface); border-radius: 12px; padding: var(--pad); }
+.w.bare { background: none; padding: 4px 0; }
+.w .row { border-bottom-color: var(--hair); }
+.w-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--gap); }
+.w-title { font-size: 14px; color: var(--text2); }
+.w-link { font-size: 14px; color: var(--text2); display: inline-flex; align-items: center; gap: 4px; }
+.w-link svg { width: 14px; height: 14px; }
+.w-big { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.w .stats .stat { background: var(--bg); }
+.wgrid > .blank.wide { grid-column: 1 / -1; }

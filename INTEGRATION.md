@@ -72,7 +72,7 @@ Insights are computed on demand and always link to the records they were counted
 3. **Shell: tab bar with four user-chosen slots + More, More screen, desktop sidebar.** — done (the + sheet comes with the modules that add to it)
 4. **Port Body Oracle as a module, restyled; import from its backup file.** — done
 5. **One Archive and one search; Journal module.** — done
-6. Dashboard widgets, sizes and layouts.
+6. **Dashboard widgets, sizes and layouts.** — done
 7. **Calendar events, Tasks, Projects, Habits.** — done (built before step 6 so the dashboard has real data)
 8. Insights.
 9. Appearance and customisation settings.
@@ -273,3 +273,25 @@ All four live in the More screen (or a tab slot) and use Christina's components.
 Verified: task grouping and completion, project progress from milestones and tasks, daily and weekly habits with
 streaks, past-month check-ins locked, plans with times and reminders, invalid end times refused, day screen, grid
 markers, Day / Week / Month views, past-month plan read-only, persistence after reload, no console errors.
+
+## Step 6 — what changed
+
+**Overview is a dashboard** (`modules/overview/`). Widgets (in `widgets.js`; modules add theirs with
+`register({ widgets })`), each showing real data and leading into its section:
+This month (Christina's month view — title, palette, images and records — kept as a full-width widget),
+Reminders (only when one is due; Dismiss), Date and time, Today (plans and tasks due), Upcoming plans, Tasks
+(check off in place), Habits (check in place), Projects (progress), Journal (latest, Write), Body Oracle
+("How are you?" — tap a state to log it for today, tap again to take it back — and recent observations),
+This week (recorded, journal entries, tasks done and habit check-ins, against last week).
+
+**Customize** (button at the top of Overview): switch widgets on and off, move them up and down, choose
+Small / Medium / Large where a widget offers it, one or two columns, preset layouts (Christina, Plan, Reflect,
+Everything, Minimal — Minimal is the original Overview), and save your own named layouts. Saved per device
+(`christina.dashboard`, `christina.dashboardLayouts`).
+
+**Fixed:** Body Oracle no longer lists Journal entries, and "Erase Body Oracle data" / restoring a Body Oracle
+backup keeps Journal entries (they were treated as Body Oracle records since step 5).
+
+Verified: default widgets with real data, acting from widgets (task, state, reminder), every customization
+(toggle, move, size, columns, presets, save / apply / delete a layout), persistence after reload, phone and desktop,
+Journal entries untouched by Body Oracle's archive and erase, no console errors.
