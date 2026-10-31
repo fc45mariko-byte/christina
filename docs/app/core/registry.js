@@ -12,6 +12,8 @@ const registry = {
   nav: [], // { id, label, icon, order } — a module's place in the tab bar / sidebar / More
   chrome: [], // () => void, redraws navigation after every render
   tabKeys: {}, // tab id -> () => string: identifies the module's own inner screen, so scroll resets on change
+  kinds: {}, // record kind -> { label, icon, open(record) }: how other screens show and open a module's records
+  liveInputs: {}, // data-live -> (el): runs on every keystroke (search fields)
 };
 
 function register(manifest) {
@@ -22,6 +24,8 @@ function register(manifest) {
   if (manifest.nav) registry.nav.push(manifest.nav);
   if (manifest.chrome) registry.chrome.push(manifest.chrome);
   Object.assign(registry.tabKeys, manifest.tabKeys || {});
+  Object.assign(registry.kinds, manifest.kinds || {});
+  Object.assign(registry.liveInputs, manifest.liveInputs || {});
 }
 
 export { registry, register };

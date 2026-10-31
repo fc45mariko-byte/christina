@@ -36,7 +36,8 @@ function recordFromEntry(e, existing) {
     id: e.id,
     kind: e.kind || 'note',
     occurredAt: iso(e.date) || new Date().toISOString(),
-    title: existing ? existing.title ?? null : null,
+    // List title in Christina: Body Oracle's own label for the entry (set by bo.js), or what was there.
+    title: BODB.labelFor ? BODB.labelFor(e) : existing ? existing.title ?? null : null,
     text: e.text && e.text.trim() ? e.text : null,
     categoryIds: e.categoryIds || [],
     threadIds: e.threadIds || [],

@@ -6,9 +6,12 @@ import { OTHER_CATEGORY_ID } from './catalog.js';
 // ------------------------------------------------------------ Records
 
 const recordById = (id) => data.records.find((r) => r.id === id);
-/** Christina's own screens (Overview, Calendar, Archive, Threads) show activities; other kinds join them in the
- *  shared Archive/Journal step. */
+/** Christina's "I did something" events. Other kinds come from Journal and Body Oracle. */
 const isActivity = (r) => r.kind === 'activity';
+const firstLine = (s) => String(s || '').trim().split('\n')[0].slice(0, 120);
+/** The line a record is listed under: its title, else the first line of its text, else its kind. */
+const recordTitle = (r, kindLabel = '') => (r.title && String(r.title).trim()) || firstLine(r.text) || kindLabel || 'Record';
+const tagById = (id) => data.tags.find((t) => t.id === id);
 const recordMonth = (r) => monthKeyOf(new Date(r.occurredAt));
 const isPastMonth = (key) => key < currentMonth();
 
@@ -22,7 +25,7 @@ function recordsBetween(start, end) {
   const s = start.getTime();
   const t = end.getTime();
   return data.records.filter((r) => {
-    if (r.archived || !isActivity(r)) return false;
+    if (r.archived) return false;
     const time = new Date(r.occurredAt).getTime();
     return time >= s && time < t;
   });
@@ -43,6 +46,12 @@ const categoryIndex = (id) => {
 function categoryHex(id, palette) {
   if (!palette || !palette.length) return categoryById(id).color;
   return palette[categoryIndex(id) % palette.length];
+}
+/** A record's colour: its category's; for a record without a category, its own colour (Body Oracle), else grey. */
+function recordHex(r, palette) {
+  if (r.categoryIds && r.categoryIds[0]) return categoryHex(r.categoryIds[0], palette);
+  const own = r.payload && typeof r.payload.color === 'string' ? r.payload.color.replace('#', '') : '';
+  return /^[0-9a-f]{6}$/i.test(own) ? own.toUpperCase() : 'A9A9A9';
 }
 
 // ------------------------------------------------------------ Threads
@@ -71,13 +80,13 @@ const lookIsEmpty = (l) => !l.title && !l.palette.length && !l.images.length;
 const monthImageKey = (month, name) => `months/${month}/${name}`;
 
 function monthsWithContent() {
-  const set = new Set(data.records.filter((r) => !r.archived && isActivity(r)).map(recordMonth));
+  const set = new Set(data.records.filter((r) => !r.archived).map(recordMonth));
   for (const key of Object.keys(data.months)) if (!lookIsEmpty(lookFor(key))) set.add(key);
   return [...set].sort();
 }
 
 export {
-  isActivity, recordById, recordMonth, isPastMonth, recordCategoryId, recordThreadId, recordPhoto, recordDuration, recordsBetween,
+  isActivity, recordTitle, recordHex, tagById, recordById, recordMonth, isPastMonth, recordCategoryId, recordThreadId, recordPhoto, recordDuration, recordsBetween,
   newestFirst, categoryById, categoryHex, threadById, threadsOverlapping, threadHex, lookFor, lookIsEmpty, monthImageKey,
   monthsWithContent,
 };

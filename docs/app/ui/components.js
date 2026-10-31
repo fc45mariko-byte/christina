@@ -2,7 +2,8 @@
 import { esc, timestamp, $ } from '../core/util.js';
 import { THREAD_COLORS } from '../core/catalog.js';
 import { data } from '../core/db.js';
-import { categoryById, categoryHex, recordCategoryId, recordDuration } from '../core/queries.js';
+import { categoryById, categoryHex, recordCategoryId, recordDuration, recordTitle, recordHex } from '../core/queries.js';
+import { registry } from '../core/registry.js';
 import { icon } from './icons.js';
 function navbar(title, right = '') {
   return `<div class="navbar">
@@ -33,6 +34,18 @@ function eventRow(e, readOnly, palette = null) {
   return `<button class="row" data-action="openEvent" data-id="${e.id}" data-readonly="${readOnly ? 1 : 0}">
     ${catIcon(recordCategoryId(e), 32, palette)}
     <span class="row-text"><span class="body">${esc(line)}</span><span class="caption">${esc(timestamp(new Date(e.occurredAt)))}</span></span>
+  </button>`;
+}
+
+/** Any record in a list. Christina's own events keep their row; journal and Body Oracle records show their
+ *  kind's icon in their colour, and open in their own section. */
+function recordRow(r, readOnly, palette = null) {
+  if (r.kind === 'activity') return eventRow(r, readOnly, palette);
+  const kind = registry.kinds[r.kind] || { label: r.kind, icon: 'more' };
+  const hex = recordHex(r, palette);
+  return `<button class="row" data-action="openRecord" data-id="${esc(r.id)}">
+    <span class="cat-icon" style="width:32px;height:32px;background:#${hex}2e;color:#${hex}">${icon(kind.icon)}</span>
+    <span class="row-text"><span class="body">${esc(recordTitle(r, kind.label))}</span><span class="caption">${esc(kind.label)} · ${esc(timestamp(new Date(r.occurredAt)))}</span></span>
   </button>`;
 }
 
@@ -84,4 +97,4 @@ function fail(error, action) {
   console.error(error);
   alert(`Couldn't ${action}. ${error && error.message ? error.message : error}`);
 }
-export { navbar, paletteDots, catIcon, badge, eventRow, chips, swatches, settingsRow, toast, actionSheet, fail };
+export { navbar, paletteDots, catIcon, badge, eventRow, recordRow, chips, swatches, settingsRow, toast, actionSheet, fail };

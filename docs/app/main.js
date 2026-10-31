@@ -16,6 +16,7 @@ import './modules/add/index.js';
 import './modules/records/index.js';
 import './modules/threads/index.js';
 import './modules/archive/index.js';
+import './modules/journal/index.js';
 import './modules/settings/index.js';
 import './modules/body-oracle/bo.js';
 import { importLegacyBodyOracle } from './modules/body-oracle/legacy.js';
@@ -45,9 +46,10 @@ async function boot() {
   bindEvents();
   try {
     await DB.open();
-    const [records, threads, months, categories] = await Promise.all(
-      ['records', 'threads', 'months', 'categories'].map((store) => DB.getAll(store))
+    const [records, threads, months, categories, tags] = await Promise.all(
+      ['records', 'threads', 'months', 'categories', 'tags'].map((store) => DB.getAll(store))
     );
+    data.tags = tags;
     data.records = records;
     data.categories = categories.sort((a, b) => a.order - b.order);
     data.threads = threads;

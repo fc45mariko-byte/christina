@@ -193,7 +193,9 @@ register({
     render();
   },
   pickCategory(el) {
-    state[el.dataset.form].categoryId = el.dataset.category;
+    const f = state[el.dataset.form];
+    // Forms with an optional category (Journal) clear it when the chosen chip is tapped again.
+    f.categoryId = f.categoryOptional && f.categoryId === el.dataset.category ? null : el.dataset.category;
     render();
   },
   pickColor(el) {

@@ -29,12 +29,13 @@ docs/
       prefs.js           per-device preferences
       queries.js  catalog.js  util.js  validation.js
     shell/               nav.js (tab bar, sidebar, slots), more.js (More, Settings → Tab bar)
-    services/            media.js (photos), backup.js (export)
+    services/            media.js (photos), backup.js (export), search.js (one search across everything)
     ui/                  tokens.css, base.css, components.css, components.js, icons.js
     modules/
       overview/  calendar/  add/  records/  threads/  archive/  settings/
-      body-oracle/       bo.js (the module), store.js (storage adapter), body-oracle.css
-      (planned) journal/  tasks/  projects/  habits/  insights/
+      body-oracle/       bo.js (the module), store.js (storage adapter), legacy.js (one-time import), body-oracle.css
+      journal/           Journal
+      (planned) tasks/  projects/  habits/  insights/
 ```
 
 Each module registers itself with `register({ tabs, screens, actions, changeActions, fileActions, validators })`.
@@ -68,7 +69,7 @@ Insights are computed on demand and always link to the records they were counted
 2. **Database v2 and migration of existing data (old data kept in `legacy`).** — done
 3. **Shell: tab bar with four user-chosen slots + More, More screen, desktop sidebar.** — done (the + sheet comes with the modules that add to it)
 4. **Port Body Oracle as a module, restyled; import from its backup file.** — done
-5. One Archive and one search; Journal module.
+5. **One Archive and one search; Journal module.** — done
 6. Dashboard widgets, sizes and layouts.
 7. Calendar events, Tasks, Projects, Habits.
 8. Insights.
@@ -215,3 +216,35 @@ Verified: the original Body Oracle used at one address (custom category, photo n
 renamed space), then that address switched to the combined app: first launch old (from cache), second launch combined
 app with all 3 entries, the photo, merged categories and the settings; old database untouched; no second import on
 reload; only the new, address-named cache remains.
+
+## Step 5 — what changed
+
+**Journal** (`docs/app/modules/journal/`): a section of its own, in the tab bar by default.
+- Entries are records of kind `journal`: date, optional title, text, optional category (tap again to clear),
+  tags (typed separated by commas; matched without regard to case and kept in the `tags` store), optional thread.
+- An entry can link to other records — Body Oracle observations or Christina events from the last 90 days.
+  The link shows on both sides: the journal entry lists what it links to, and a Body Oracle entry shows
+  "In your journal".
+- Timeline by month, newest first; filter by tag; search the journal.
+- Editing and deleting; entries from past months are read-only ("Archived").
+
+**One list of records across Christina.** Body Oracle records and journal entries now appear with Christina's
+events on Overview (the month list), the Calendar (dots), Archive (months) and thread pages. Each opens in its
+own section. Christina's events keep their exact row; other records show their kind's icon in their category's
+colour (or their own colour from Body Oracle), and a caption with the kind and time. Body Oracle records are
+listed under Body Oracle's own label (e.g. "Tense (left shoulder)", or the state's name).
+
+**One search** (Archive): searches events, journal entries, Body Oracle records and threads — titles, text,
+categories, tags, threads, places, sensations. Filter by All / Events / Journal / Body Oracle.
+With the field empty, Archive shows the month tiles as before.
+
+**Tab bar defaults** are now Overview, Calendar, Journal, Threads (+ and More). Archive moved to More by default.
+A tab bar the person has already set is kept.
+
+Modules declare how their records are shown and opened with `register({ kinds: { <kind>: { label, icon, open } } })`.
+
+Verified: new journal entries (categories, tags reused case-insensitively, thread, links), tag filter, journal
+search, links in both directions, Archive search across all kinds with the kind filter, Calendar dots for every kind,
+Body Oracle records on Overview opening in Body Oracle, past-month journal lock, reload persistence, phone and desktop,
+light and dark. Christina's own screens match step 4 except the Archive search field; all earlier tests (Body Oracle,
+backup restore, automatic import, v1 upgrade) still pass.

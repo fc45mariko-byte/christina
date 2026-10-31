@@ -237,3 +237,8 @@ img[data-file]:not([src]) { visibility: hidden; }
 .install-hint p { margin: 0; flex: 1; }
 .install-hint button { color: var(--text2); font-size: 14px; }
 .install-hint svg { width: 20px; height: 20px; flex: none; margin-top: 1px; }
+
+/* ---------- Search field ---------- */
+.search-field { display: flex; align-items: center; gap: var(--gap); min-height: 44px; padding-top: 0; padding-bottom: 0; }
+.search-field svg { width: 18px; height: 18px; flex: none; color: var(--text2); }
+.search-field input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 16px; padding: 10px 0; -webkit-appearance: none; appearance: none; }

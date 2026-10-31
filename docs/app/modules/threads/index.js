@@ -2,11 +2,11 @@
 import { esc, ymd, rangeText } from '../../core/util.js';
 import { DB, data } from '../../core/db.js';
 import { THREAD_COLORS } from '../../core/catalog.js';
-import { threadById, isPastMonth, recordMonth, newestFirst, isActivity } from '../../core/queries.js';
+import { threadById, isPastMonth, recordMonth, newestFirst } from '../../core/queries.js';
 import { state, push, back } from '../../core/state.js';
 import { render } from '../../core/render.js';
 import { register, registry } from '../../core/registry.js';
-import { navbar, badge, eventRow, chips, swatches, actionSheet, fail } from '../../ui/components.js';
+import { navbar, badge, recordRow, chips, swatches, actionSheet, fail } from '../../ui/components.js';
 function relevanceSorted(list) {
   const today = ymd(new Date());
   const rank = (t) => (t.startDate > today ? 1 : t.endDate && t.endDate < today ? 2 : 0);
@@ -50,7 +50,7 @@ function viewThreads() {
 function viewThreadDetail(id) {
   const t = threadById(id);
   if (!t) return `${navbar('')}<div class="page"><div class="blank">This thread was removed.</div></div>`;
-  const linked = data.records.filter((e) => isActivity(e) && (e.threadIds || []).includes(t.id) && !e.archived).sort(newestFirst);
+  const linked = data.records.filter((e) => (e.threadIds || []).includes(t.id) && !e.archived).sort(newestFirst);
   return `${navbar('', `<button class="nav-btn" data-action="editThread" data-id="${t.id}">Edit</button>`)}
   <div class="page">
     <div class="row-field" style="justify-content:flex-start">
@@ -66,7 +66,7 @@ function viewThreadDetail(id) {
       ${t.endDate ? `<span class="label">End</span><input class="field" type="date" value="${esc(t.endDate)}" min="${esc(t.startDate)}" data-change="threadEnd" data-id="${t.id}">` : ''}
     </div>
     <div class="section"><span class="label">Linked events</span>
-      ${linked.length ? `<div class="list">${linked.map((e) => eventRow(e, isPastMonth(recordMonth(e)))).join('')}</div>` : '<span class="muted">No linked events.</span>'}
+      ${linked.length ? `<div class="list">${linked.map((e) => recordRow(e, isPastMonth(recordMonth(e)))).join('')}</div>` : '<span class="muted">No linked events.</span>'}
     </div>
     <div class="section" style="margin-top:8px">
       <button class="btn-secondary" data-action="archiveThread" data-id="${t.id}">${t.archived ? 'Unarchive' : 'Archive'}</button>

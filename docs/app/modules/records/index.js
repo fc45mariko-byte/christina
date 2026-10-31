@@ -5,7 +5,7 @@ import {
   recordById, threadById, recordMonth, isPastMonth, categoryById, recordCategoryId, recordThreadId, recordPhoto, recordDuration,
 } from '../../core/queries.js';
 import { push, back } from '../../core/state.js';
-import { register } from '../../core/registry.js';
+import { register, registry } from '../../core/registry.js';
 import { icon } from '../../ui/icons.js';
 import { navbar, catIcon, fail } from '../../ui/components.js';
 function viewEventDetail(id, readOnly) {
@@ -71,6 +71,14 @@ register({
   },
   deleteEvent(el) {
     deleteEvent(el.dataset.id);
+  },
+  /** Opens any record in the section it belongs to (journal entry, Body Oracle record, or event). */
+  openRecord(el) {
+    const r = recordById(el.dataset.id);
+    if (!r) return;
+    const kind = registry.kinds[r.kind];
+    if (kind && kind.open) kind.open(r);
+    else push({ name: 'event', id: r.id, readOnly: isPastMonth(recordMonth(r)) });
   },
   },
 });

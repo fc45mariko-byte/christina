@@ -5,7 +5,7 @@ import { lookFor, recordsBetween, newestFirst, monthImageKey } from '../../core/
 import { render } from '../../core/render.js';
 import { register } from '../../core/registry.js';
 import { icon } from '../../ui/icons.js';
-import { paletteDots, eventRow } from '../../ui/components.js';
+import { paletteDots, recordRow } from '../../ui/components.js';
 function viewHome() {
   const key = currentMonth();
   const look = lookFor(key);
@@ -25,7 +25,7 @@ function viewHome() {
     ${look.images.length ? `<div class="strip">${look.images.map((n) => `<div class="sq"><img data-file="${esc(monthImageKey(key, n))}" alt=""></div>`).join('')}</div>` : ''}
     ${
       events.length
-        ? `<div class="list">${events.map((e) => eventRow(e, false, look.palette)).join('')}</div>`
+        ? `<div class="list">${events.map((e) => recordRow(e, false, look.palette)).join('')}</div>`
         : `<div class="blank">${esc(monthName(key))} is blank. Tap + to add something.</div>`
     }
   </div>`;

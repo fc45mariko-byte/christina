@@ -2,7 +2,7 @@
 import { esc, ymd, addDays, startOfDay, monthStart, maxStr, brightness, F } from '../../core/util.js';
 import { firstWeekday } from '../../core/prefs.js';
 import { LANE_HEIGHT } from '../../core/catalog.js';
-import { recordsBetween, threadsOverlapping, threadHex, categoryHex, recordCategoryId, lookFor, monthImageKey } from '../../core/queries.js';
+import { recordsBetween, threadsOverlapping, threadHex, categoryHex, recordCategoryId, recordHex, recordTitle, lookFor, monthImageKey } from '../../core/queries.js';
 import { paletteDots } from '../../ui/components.js';
 function monthWeeks(key) {
   const first = monthStart(key);
@@ -104,7 +104,11 @@ function calendarGrid(weeks, startDate, endDate, palette, readOnly) {
           const items = d ? byDay[ymd(d)] || [] : [];
           const readonlyFlag = readOnly ? 1 : -1;
           return `<div class="cell">${items
-            .map((e) => `<button class="ev-dot" data-action="openEvent" data-id="${e.id}" data-readonly="${readonlyFlag}" aria-label="${esc(e.title)}"><i style="background:#${categoryHex(recordCategoryId(e), palette)}"></i></button>`)
+            .map((e) =>
+              e.kind === 'activity'
+                ? `<button class="ev-dot" data-action="openEvent" data-id="${e.id}" data-readonly="${readonlyFlag}" aria-label="${esc(e.title)}"><i style="background:#${categoryHex(recordCategoryId(e), palette)}"></i></button>`
+                : `<button class="ev-dot" data-action="openRecord" data-id="${esc(e.id)}" aria-label="${esc(recordTitle(e))}"><i style="background:#${recordHex(e, palette)}"></i></button>`
+            )
             .join('')}</div>`;
         })
         .join('');

@@ -34,6 +34,7 @@ function bindEvents() {
       setPath(el.dataset.bind, el.value);
       refreshValidity();
     }
+    if (el.dataset && el.dataset.live && registry.liveInputs[el.dataset.live]) registry.liveInputs[el.dataset.live](el);
   });
 
   document.addEventListener('change', (event) => {

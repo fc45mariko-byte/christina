@@ -14,7 +14,7 @@ import { prefs, Settings } from '../core/prefs.js';
 import { icon } from '../ui/icons.js';
 
 const SLOT_COUNT = 4;
-const DEFAULT_SLOTS = ['home', 'map', 'threads', 'archive'];
+const DEFAULT_SLOTS = ['home', 'map', 'journal', 'threads'];
 const WIDE = window.matchMedia('(min-width: 900px)');
 
 const navItems = () => [...registry.nav].sort((a, b) => a.order - b.order);

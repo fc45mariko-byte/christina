@@ -10,7 +10,8 @@
  * From here on this file is the module's source. Body Oracle's original code style (compact lines) is kept
  * so it can still be compared with the original repository. */
 import { render as christinaRender } from '../../core/render.js';
-import { register } from '../../core/registry.js';
+import { register, registry } from '../../core/registry.js';
+import { openModule } from '../../shell/nav.js';
 import { DB as CDB, data as CData } from '../../core/db.js';
 import { OTHER_CATEGORY_ID } from '../../core/catalog.js';
 import { extendIcons, ICON_PATHS } from '../../ui/icons.js';
@@ -394,6 +395,7 @@ V.entry={html({id}){const e=get(id);if(!e)return head('Not found',{back:true});c
    ${cats.length?`<div class="chips sm">${cats.map(c=>`<button class="chip" data-a="mapFilter" data-f="cat:${c.id}"><i class="dot" style="--c:${c.color}"></i>${esc(c.name)}</button>`).join('')}</div>`:''}
    ${ths.length?`<div class="chips sm">${ths.map(t=>`<button class="chip" data-a="go" data-to="thread" data-p="${jp({id:t.id})}">${ico('threads',14)}${esc(t.name)}</button>`).join('')}</div>`:''}
   </div>
+  ${journalLinksHTML(e.id)}
   ${it?`<button class="row card" data-a="go" data-to="intention" data-p="${jp({id:it.id})}"><span class="row-i">${ico('intention',18)}</span><span class="row-m"><span class="row-s">Intention</span><span class="row-t">${esc(it.title)}</span></span>${ico('chev',16)}</button>`:''}
   ${e.location||e.tags?`<div class="list card mt">${e.location?`<div class="row"><span class="row-i">${ico('location',18)}</span><span class="row-m">${esc(e.location)}</span></div>`:''}${e.tags?`<div class="row"><span class="row-i">${ico('tag',18)}</span><span class="row-m">${esc(e.tags)}</span></div>`:''}</div>`:''}
   ${locked?'':`<button class="danger-link" data-a="delEntry" data-id="${e.id}">Delete entry</button>`}`;}};
@@ -1009,6 +1011,7 @@ const NEW={
 async function quickCreate(type,name){const d=CAT_DEF[name];const x={id:uid(),type,name,color:d?d[0]:PALETTE[all(type).length%PALETTE.length],icon:d?d[1]:(type==='state'?'state':type==='thread'?'threads':'sign'),imageId:null,order:all(type).length};if(type==='thread')x.description='';await save(x);return x;}
 function stateLogSheet(){pickSheet('How are you?',ordered('state').map(s=>({id:s.id,label:s.name,color:s.color})),[],true,async ids=>{if(!ids.length)return;await save(newEntryDraft('state',{stateIds:ids}));render();toast('Added to today');},{label:'New state',fn:()=>NEW.state()});}
 const A={
+  openJournal:t=>{const r=CData.records.find(x=>x.id===t.dataset.id);const k=registry.kinds.journal;if(r&&k)k.open(r);},
   togArchetypes:async()=>{S.settings.oracleArchetypes=!S.settings.oracleArchetypes;await saveSettings();render();},
   go:t=>go(t.dataset.to,t.dataset.p?JSON.parse(t.dataset.p):{}),
   back:()=>back(),
@@ -1216,13 +1219,28 @@ const boKey=()=>READY?`${R.tab}|${cur().name}|${R.stack.length}`:'loading';
 /** Runs after Christina has drawn the page: Body Oracle's per-screen setup (sortable lists, body sheet, video previews). */
 function boAfter(){if(!READY||!document.querySelector('#main .m-bo[data-bo-view]'))return;const c=cur();const view=V[c.name]||V.home;view.after&&view.after(c.params||{});watchSneaks();}
 
+/* Journal entries (Christina) that link to this record. */
+function journalLinksHTML(id){const js=CData.records.filter(r=>r.kind==='journal'&&(r.linkedRecordIds||[]).includes(id));if(!js.length)return'';
+  return `<div class="sec-h mt"><h2 class="sec-t">In your journal</h2></div><div class="list card">${js.map(r=>`<button class="row" data-a="openJournal" data-id="${esc(r.id)}"><span class="row-i">${ico('note',18)}</span><span class="row-m"><span class="row-t">${esc(r.title||(r.text||'').split('\n')[0].slice(0,80)||'Journal entry')}</span><span class="row-s">${fmt.day(r.occurredAt)}</span></span>${ico('chev',16)}</button>`).join('')}</div>`;}
+
+/* Opening a Body Oracle record from elsewhere in Christina (Overview, Calendar, Archive, Journal). */
+let PENDING=null;
+function openBOEntry(id){if(READY){stopTimer();R.tab='archive';R.stack=[{name:'entry',params:{id}}];}else PENDING=id;openModule('bo');christinaRender();}
+
+/* Each record's list title in Christina, using Body Oracle's own labels (state names, ritual names, places). */
+BODB.labelFor=e=>entryLabel(e);
+async function refreshTitles(){const changed=[];for(const e of all('entry')){const r=CData.records.find(x=>x.id===e.id);const t=entryLabel(e);if(r&&r.title!==t){r.title=t;changed.push(r);}}
+  if(changed.length)await CDB.write(['records'],tx=>changed.forEach(r=>tx.objectStore('records').put(r)));BODB.synced=CDB.generation;}
+
 async function boInit(){
   fileIn=document.createElement('input');fileIn.type='file';fileIn.accept='image/*,video/*';fileIn.hidden=true;fileIn.addEventListener('change',onFile);document.body.append(fileIn);
   for(const x of await DB.all())S.items.set(x.id,x);
   S.settings=S.items.get('settings')||null;S.items.delete('settings');await loadImages();
   if(!S.settings){S.settings=defaultSettings();R.stack=[{name:'onboard',params:{step:1,cats:[]}}];}
   else migrateSettings(S.settings);
-  await normalizeItems();applyTheme();READY=true;christinaRender();}
+  await normalizeItems();applyTheme();await refreshTitles();READY=true;
+  if(PENDING){R.tab='archive';R.stack=[{name:'entry',params:{id:PENDING}}];PENDING=null;}
+  christinaRender();}
 
 /* Body Oracle's document listeners: its own data-a / data-bo attributes, so they never act on Christina's elements. */
 (function bindBO(){
@@ -1242,6 +1260,8 @@ register({
     hideBack:()=>READY&&R.stack.length>0,
     reset:()=>{if(READY&&!(R.stack[0]&&R.stack[0].name==='onboard')){stopTimer();R.stack=[];R.tab='home';}}},
   tabs:{bo:boRoot},
+  /* Body Oracle's records, as other sections list and open them */
+  kinds:Object.fromEntries(Object.entries(KINDS).map(([k,v])=>[k,{label:v.label,icon:v.icon,open:r=>openBOEntry(r.id)}])),
   tabKeys:{bo:boKey},
   chrome:boAfter,
 });
