@@ -43,7 +43,7 @@ function viewCalendarSettings() {
         <label class="toggle"><input type="checkbox" data-change="setWeekView" ${prefs.weekView ? 'checked' : ''}><span></span></label>
       </div>
     </div>
-    <p class="footnote">Week view shows one week at a time on the Map.</p>
+    <p class="footnote">Week view shows one week at a time on the Calendar. You can also switch between Day, Week and Month at the top of the Calendar.</p>
   </div>`;
 }
 
@@ -136,6 +136,8 @@ register({
   setWeekView(el) {
     prefs.weekView = el.checked;
     Settings.write('weekView', prefs.weekView);
+    prefs.calendarView = el.checked ? 'week' : 'month'; // the Calendar's Day / Week / Month switch
+    Settings.write('calendarView', prefs.calendarView);
     render();
   },
   },

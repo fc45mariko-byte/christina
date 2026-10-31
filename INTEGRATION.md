@@ -35,7 +35,9 @@ docs/
       overview/  calendar/  add/  records/  threads/  archive/  settings/
       body-oracle/       bo.js (the module), store.js (storage adapter), legacy.js (one-time import), body-oracle.css
       journal/           Journal
-      (planned) tasks/  projects/  habits/  insights/
+      tasks/  projects/  habits/
+      calendar/          grid.js, plans.js (scheduled events), index.js (Day / Week / Month)
+      (planned) insights/
 ```
 
 Each module registers itself with `register({ tabs, screens, actions, changeActions, fileActions, validators })`.
@@ -71,7 +73,7 @@ Insights are computed on demand and always link to the records they were counted
 4. **Port Body Oracle as a module, restyled; import from its backup file.** — done
 5. **One Archive and one search; Journal module.** — done
 6. Dashboard widgets, sizes and layouts.
-7. Calendar events, Tasks, Projects, Habits.
+7. **Calendar events, Tasks, Projects, Habits.** — done (built before step 6 so the dashboard has real data)
 8. Insights.
 9. Appearance and customisation settings.
 10. Tests on phone and desktop sizes, preview deploy, cut-over.
@@ -248,3 +250,26 @@ search, links in both directions, Archive search across all kinds with the kind 
 Body Oracle records on Overview opening in Body Oracle, past-month journal lock, reload persistence, phone and desktop,
 light and dark. Christina's own screens match step 4 except the Archive search field; all earlier tests (Body Oracle,
 backup restore, automatic import, v1 upgrade) still pass.
+
+## Step 7 — what changed
+
+All four live in the More screen (or a tab slot) and use Christina's components. Shared save/delete helper: `core/repo.js`.
+
+- **Calendar** (`modules/calendar/`): a Day / Week / Month switch at the top (kept in step with the "Week view" setting).
+  Month and Week keep Christina's grid and add **plans** (rings) and **open tasks due** (small squares).
+  Tapping a day number opens that day: plans, tasks due and records. **Plans** (`schedule` store) have a title,
+  date, time or all day, optional end time, category, notes and a **reminder**. Reminders are shown inside the app
+  (iPhone web apps cannot schedule notifications without a server). Plans in a past month are read-only.
+- **Tasks**: title, optional due date, priority, category, project, notes. Grouped Overdue / Today / Upcoming /
+  No date, with a Done list. Tasks due on a day appear in the Calendar. A task completed in a past month is read-only.
+- **Projects**: title, description, colour, target date, status (Active / Done / Archived), milestones, tasks,
+  and an optional thread whose records show on the project page. Progress = done milestones and tasks out of all.
+- **Habits**: daily or "times a week", colour, optional category. One log row per check-in day (`habitLogs`),
+  so history is kept. **Streaks** (current and longest, in days or weeks), completion over the last 30 days or
+  4 weeks, and a 16-week history grid. Check-ins can be changed for days of the current month only.
+- The Add page offers Plan, Task, Journal and Habit next to Christina's two forms.
+- `sw.js` now lists every app file (regenerated from the folder).
+
+Verified: task grouping and completion, project progress from milestones and tasks, daily and weekly habits with
+streaks, past-month check-ins locked, plans with times and reminders, invalid end times refused, day screen, grid
+markers, Day / Week / Month views, past-month plan read-only, persistence after reload, no console errors.

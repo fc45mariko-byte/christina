@@ -17,6 +17,12 @@ function viewAdd() {
       <button class="${state.addMode === 'did' ? 'on' : ''}" data-action="addMode" data-mode="did">I did something</button>
       <button class="${state.addMode === 'want' ? 'on' : ''}" data-action="addMode" data-mode="want">I want this to happen</button>
     </div>
+    <div class="chip-row" aria-label="Add something else">
+      <button class="pill" data-action="newPlan">${icon('clock')} Plan</button>
+      <button class="pill" data-action="newTask">${icon('check')} Task</button>
+      <button class="pill" data-action="newJournal">${icon('journal')} Journal</button>
+      <button class="pill" data-action="newHabit">${icon('repeat')} Habit</button>
+    </div>
     ${state.addMode === 'did' ? eventFormHTML() : threadFormHTML()}
   </div>`;
 }

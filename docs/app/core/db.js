@@ -57,7 +57,7 @@ const DB = {
 };
 
 /** Loaded data. `records` holds every kind; `categories` is sorted by `order`. */
-const data = { records: [], threads: [], months: {}, categories: [], tags: [] };
+const data = { records: [], threads: [], months: {}, categories: [], tags: [], schedule: [], tasks: [], projects: [], habits: [], habitLogs: [] };
 
 const fileURLs = new Map();
 async function fileURL(key) {

@@ -4,6 +4,7 @@ import { firstWeekday } from '../../core/prefs.js';
 import { LANE_HEIGHT } from '../../core/catalog.js';
 import { recordsBetween, threadsOverlapping, threadHex, categoryHex, recordCategoryId, recordHex, recordTitle, lookFor, monthImageKey } from '../../core/queries.js';
 import { paletteDots } from '../../ui/components.js';
+import { data } from '../../core/db.js';
 function monthWeeks(key) {
   const first = monthStart(key);
   const count = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
@@ -84,7 +85,7 @@ function calendarGrid(weeks, startDate, endDate, palette, readOnly) {
           if (!d) return '<div class="day"><span class="num"></span></div>';
           const isToday = ymd(d) === todayYMD;
           const style = isToday ? ` style="background:${todayBg};color:${todayFg}"` : '';
-          return `<div class="day"><span class="num${isToday ? ' today' : ''}"${style}>${d.getDate()}</span></div>`;
+          return `<div class="day"><button class="num${isToday ? ' today' : ''}"${style} data-action="openDay" data-day="${ymd(d)}" aria-label="${esc(F.weekdayDayMonth.format(d))}">${d.getDate()}</button></div>`;
         })
         .join('');
       const bars = lanes
@@ -103,7 +104,14 @@ function calendarGrid(weeks, startDate, endDate, palette, readOnly) {
         .map((d) => {
           const items = d ? byDay[ymd(d)] || [] : [];
           const readonlyFlag = readOnly ? 1 : -1;
-          return `<div class="cell">${items
+          // Plans (rings) and open tasks due (small squares) for that day, before what was recorded.
+          const day = d ? ymd(d) : '';
+          const plans = d ? data.schedule.filter((p) => p.date === day) : [];
+          const tasks = d ? data.tasks.filter((t) => t.due === day && !t.done) : [];
+          const marks =
+            plans.map((p) => `<button class="ev-dot" data-action="openPlan" data-id="${esc(p.id)}" aria-label="${esc(p.title)}"><i style="background:transparent;box-shadow:inset 0 0 0 1.5px #${esc(p.categoryId ? categoryHex(p.categoryId, palette) : '7A7A7A')}"></i></button>`).join('') +
+            tasks.map((t) => `<button class="ev-dot" data-action="openTask" data-id="${esc(t.id)}" aria-label="${esc(t.title)}"><i style="border-radius:1.5px;background:var(--text2)"></i></button>`).join('');
+          return `<div class="cell">${marks}${items
             .map((e) =>
               e.kind === 'activity'
                 ? `<button class="ev-dot" data-action="openEvent" data-id="${e.id}" data-readonly="${readonlyFlag}" aria-label="${esc(e.title)}"><i style="background:#${categoryHex(recordCategoryId(e), palette)}"></i></button>`

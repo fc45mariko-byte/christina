@@ -2,7 +2,7 @@
 // Bump RELEASE whenever app files change so phones pick up the update.
 // Cache names carry this copy's address: Christina can be served from more than one path on the same site
 // (e.g. /christina/ and /bodyoracle/), and those share one cache storage.
-const RELEASE = 'christina-v9';
+const RELEASE = 'christina-v10';
 const VERSION = `${RELEASE} ${self.registration.scope}`;
 /** Ours to remove: older versions at this address, and caches from before addresses were added
  *  (names without a space, e.g. 'christina-v5' or the old app's 'body-oracle-v5'). */
@@ -20,8 +20,9 @@ const SHELL = [
   'app/core/prefs.js',
   'app/core/queries.js',
   'app/core/registry.js',
-  'app/core/schema.js',
   'app/core/render.js',
+  'app/core/repo.js',
+  'app/core/schema.js',
   'app/core/state.js',
   'app/core/util.js',
   'app/core/validation.js',
@@ -34,11 +35,15 @@ const SHELL = [
   'app/modules/body-oracle/store.js',
   'app/modules/calendar/grid.js',
   'app/modules/calendar/index.js',
+  'app/modules/calendar/plans.js',
+  'app/modules/habits/index.js',
   'app/modules/journal/index.js',
   'app/modules/overview/index.js',
+  'app/modules/projects/index.js',
   'app/modules/records/index.js',
   'app/modules/settings/index.js',
   'app/modules/settings/personalize.js',
+  'app/modules/tasks/index.js',
   'app/modules/threads/index.js',
   'app/services/backup.js',
   'app/services/media.js',
