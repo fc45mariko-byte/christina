@@ -1,0 +1,27 @@
+/* Christina — design tokens. Visual spec: white / #1a1a1a base, black / #f5f5f5 text,
+   SF Pro (system font), 24/16/14/12pt type, 16 margin, 12 padding, 8 gap. */
+
+:root {
+  --bg: #ffffff;
+  --text: #000000;
+  --text2: rgba(0, 0, 0, 0.5);
+  --surface: #f4f4f2;
+  --hair: rgba(0, 0, 0, 0.08);
+  --danger: #d93025;
+  --margin: 16px;
+  --pad: 12px;
+  --gap: 8px;
+  --radius: 10px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a1a;
+    --text: #f5f5f5;
+    --text2: rgba(245, 245, 245, 0.55);
+    --surface: #262626;
+    --hair: rgba(255, 255, 255, 0.1);
+    --danger: #ff6b5e;
+  }
+}
