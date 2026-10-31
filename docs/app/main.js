@@ -18,6 +18,8 @@ import './modules/threads/index.js';
 import './modules/archive/index.js';
 import './modules/settings/index.js';
 import './modules/body-oracle/bo.js';
+import { importLegacyBodyOracle } from './modules/body-oracle/legacy.js';
+import { toast } from './ui/components.js';
 
 // Navigation shared by every screen.
 register({
@@ -54,7 +56,15 @@ async function boot() {
     $('#main').innerHTML = `<div class="page"><div class="blank">Christina couldn't open its data. ${esc(error && error.message ? error.message : String(error))}</div></div>`;
     return;
   }
+  // Where Body Oracle used to run, bring its existing data in once (the old database is left as it was).
+  let imported = 0;
+  try {
+    imported = await importLegacyBodyOracle();
+  } catch (error) {
+    console.error('Body Oracle import', error);
+  }
   render();
+  if (imported) toast(`Body Oracle: ${imported} ${imported === 1 ? 'entry' : 'entries'} brought in`);
   WIDE.addEventListener('change', () => {
     // Widening while a section is open inside More: show it as its own sidebar section.
     const first = state.stacks.more[0];

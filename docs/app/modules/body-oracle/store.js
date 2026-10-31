@@ -120,6 +120,41 @@ function upsert(list, item) {
 }
 const sortCategories = () => data.categories.sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || String(a.createdAt).localeCompare(String(b.createdAt)));
 
+// ------------------------------------------------------------ bringing data in
+
+const lower = (s) => String(s || '').trim().toLowerCase();
+
+/** Categories and threads are shared with Christina. Incoming ones whose name matches an existing one are
+ *  merged into it: they are left out, and every link to them is pointed at the existing id. */
+function mergeShared(items) {
+  const catByName = new Map(data.categories.map((c) => [lower(c.name), c.id]));
+  const threadByName = new Map(data.threads.map((t) => [lower(t.title), t.id]));
+  const catAlias = new Map();
+  const threadAlias = new Map();
+  const kept = items.filter((x) => {
+    if (x.type === 'category') {
+      const existing = catByName.get(lower(x.name));
+      if (existing && existing !== x.id) { catAlias.set(x.id, existing); return false; }
+    }
+    if (x.type === 'thread') {
+      const existing = threadByName.get(lower(x.name));
+      if (existing && existing !== x.id) { threadAlias.set(x.id, existing); return false; }
+    }
+    return true;
+  });
+  const fixCategory = (id) => catAlias.get(id) || id;
+  const fixThread = (id) => threadAlias.get(id) || id;
+  for (const x of kept) {
+    if (Array.isArray(x.categoryIds)) x.categoryIds = [...new Set(x.categoryIds.map(fixCategory))];
+    if (Array.isArray(x.threadIds)) x.threadIds = [...new Set(x.threadIds.map(fixThread))];
+    if (x.threadId) x.threadId = fixThread(x.threadId);
+    if (x.type === 'settings' && Array.isArray(x.radial)) {
+      x.radial.forEach((r) => { if (r.action && r.action.startsWith('cat:')) r.action = 'cat:' + fixCategory(r.action.slice(4)); });
+    }
+  }
+  return { items: kept, fixCategory, fixThread };
+}
+
 // ------------------------------------------------------------ the interface Body Oracle's code uses
 
 const BODB = {
@@ -239,4 +274,4 @@ const BODB = {
   },
 };
 
-export { BODB, BO_STORES, recordFromEntry, entryFromRecord, threadFromBO, threadToBO, categoryFromBO, categoryToBO };
+export { BODB, BO_STORES, mergeShared, recordFromEntry, entryFromRecord, threadFromBO, threadToBO, categoryFromBO, categoryToBO };

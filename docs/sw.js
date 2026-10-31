@@ -1,6 +1,12 @@
 // Offline support: the app shell is cached so Christina opens without a connection.
-// Bump VERSION whenever app files change so phones pick up the update.
-const VERSION = 'christina-v6';
+// Bump RELEASE whenever app files change so phones pick up the update.
+// Cache names carry this copy's address: Christina can be served from more than one path on the same site
+// (e.g. /christina/ and /bodyoracle/), and those share one cache storage.
+const RELEASE = 'christina-v8';
+const VERSION = `${RELEASE} ${self.registration.scope}`;
+/** Ours to remove: older versions at this address, and caches from before addresses were added
+ *  (names without a space, e.g. 'christina-v5' or the old app's 'body-oracle-v5'). */
+const isStale = (key) => key !== VERSION && (key.endsWith(` ${self.registration.scope}`) || !key.includes(' '));
 const SHELL = [
   './',
   'index.html',
@@ -24,6 +30,7 @@ const SHELL = [
   'app/modules/archive/index.js',
   'app/modules/body-oracle/bo.js',
   'app/modules/body-oracle/body-oracle.css',
+  'app/modules/body-oracle/legacy.js',
   'app/modules/body-oracle/store.js',
   'app/modules/calendar/grid.js',
   'app/modules/calendar/index.js',
@@ -50,7 +57,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter(isStale).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

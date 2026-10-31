@@ -14,7 +14,7 @@ import { register } from '../../core/registry.js';
 import { DB as CDB, data as CData } from '../../core/db.js';
 import { OTHER_CATEGORY_ID } from '../../core/catalog.js';
 import { extendIcons, ICON_PATHS } from '../../ui/icons.js';
-import { BODB } from './store.js';
+import { BODB, mergeShared } from './store.js';
 
 /* BODY ORACLE — local-first personal world. All data lives in this browser's IndexedDB on the device. */
 
@@ -1174,19 +1174,9 @@ async function importData(f){if(!f)return;let backup;try{backup=JSON.parse(await
   confirmSheet(`Bring in ${plural(backup.items.filter(x=>x.type==='entry').length,'entry','entries')} from this Body Oracle backup? Body Oracle data here now is replaced. Christina’s events, threads and categories are kept.`,'Restore backup',async()=>{
     toast('Restoring…');
     await DB.clear();for(const m of[IMG,VID]){m.forEach(u=>URL.revokeObjectURL(u));m.clear();}
-    /* Categories are shared with Christina: a backup category with the same name as an existing one is merged into it. */
-    const byName=new Map(CData.categories.map(c=>[lc(c.name),c.id]));const alias=new Map();
-    const items=backup.items.filter(x=>{if(x.type!=='category')return true;const ex=byName.get(lc(x.name));if(ex&&ex!==x.id){alias.set(x.id,ex);return false;}return true;});
-    const fix=id=>alias.get(id)||id;
-    /* Threads are shared too: a backup thread with the same name as an existing one is merged into it. */
-    const threadByName=new Map(CData.threads.map(t=>[lc(t.title),t.id]));const talias=new Map();
-    const items2=items.filter(x=>{if(x.type!=='thread')return true;const ex=threadByName.get(lc(x.name));if(ex&&ex!==x.id){talias.set(x.id,ex);return false;}return true;});
-    const tfix=id=>talias.get(id)||id;
-    for(const x of items2){if(x.type==='settings')continue;
-      if(Array.isArray(x.categoryIds))x.categoryIds=[...new Set(x.categoryIds.map(fix))];
-      if(Array.isArray(x.threadIds))x.threadIds=[...new Set(x.threadIds.map(tfix))];
-      if(x.threadId)x.threadId=tfix(x.threadId);
-      await DB.put(x);}
+    /* Categories and threads are shared with Christina: ones with an existing name are merged (store.js). */
+    const {items:merged,fixCategory:fix}=mergeShared(backup.items);
+    for(const x of merged){if(x.type==='settings')continue;await DB.put(x);}
     S.settings=Object.assign(defaultSettings(),{v:1},backup.settings||{},{id:'settings',type:'settings'});
     (S.settings.radial||[]).forEach(r=>{if(r.action&&r.action.startsWith('cat:'))r.action='cat:'+fix(r.action.slice(4));});
     migrateSettings(S.settings);await saveSettings();

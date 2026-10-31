@@ -192,3 +192,26 @@ Verified (Chromium, phone and desktop sizes, light and dark):
 - Christina: the 45-step side-by-side session at desktop width shows the same page content as step 3 (only the
   Categories footnote changed; the remaining pixel differences are the clock minute and toast timing); the v1 → v2
   upgrade test still passes.
+
+## Deployment at the Body Oracle address
+
+The combined app is also served from the `bodyoracle` repository, replacing the original Body Oracle there
+(its last original commit is `4e4cf5d` in that repository). The source stays in this repository; the
+`bodyoracle` copy is the contents of `docs/`.
+
+- **Automatic one-time import** (`docs/app/modules/body-oracle/legacy.js`): where the old Body Oracle ran, its
+  database (`body-oracle`) is still on the device. On the first launch of the combined app, everything in it is
+  copied into Christina's database — entries, photos and videos, states, rituals, prayers, intentions, sigils,
+  Oracle readings, threads, categories and settings — with categories and threads merged by name. The old database
+  is only read and is kept as a fallback. It runs once (recorded in `meta` as `bodyOracleImport`), and not at all
+  if Christina already has Body Oracle data.
+- **Offline caches** are named per address (`christina-v8 <scope>`), so copies at different paths on the same site
+  don't delete each other's caches. The old Body Oracle cache is removed on update.
+- **First launch after the update** still shows the old Body Oracle, served from its offline cache while the new
+  version downloads. From the next launch the combined app runs and brings the data in.
+- The installed Home Screen icon and name stay as they were installed until the app is added to the Home Screen again.
+
+Verified: the original Body Oracle used at one address (custom category, photo note, body observation, state,
+renamed space), then that address switched to the combined app: first launch old (from cache), second launch combined
+app with all 3 entries, the photo, merged categories and the settings; old database untouched; no second import on
+reload; only the new, address-named cache remains.
