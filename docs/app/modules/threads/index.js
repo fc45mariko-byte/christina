@@ -1,8 +1,8 @@
 /* Threads: spans of time with a title, colour and category, drawn as bars on the calendar. */
 import { esc, ymd, rangeText } from '../../core/util.js';
 import { DB, data } from '../../core/db.js';
-import { CAT, THREAD_COLORS } from '../../core/catalog.js';
-import { threadById, isPastMonth, eventMonth } from '../../core/queries.js';
+import { THREAD_COLORS } from '../../core/catalog.js';
+import { threadById, isPastMonth, recordMonth, newestFirst } from '../../core/queries.js';
 import { state, push, back } from '../../core/state.js';
 import { render } from '../../core/render.js';
 import { register, registry } from '../../core/registry.js';
@@ -24,7 +24,7 @@ function threadCard(t) {
   return `<button class="card${t.archived ? ' dim' : ''}" data-action="openThread" data-id="${t.id}" data-longpress="threadMenu">
     <span class="dot" style="background:#${esc(t.color)}"></span>
     <span class="row-text"><span>${esc(t.title)}</span><span class="caption">${esc(rangeText(t.startDate, t.endDate))}</span></span>
-    ${badge(t.category)}
+    ${badge(t.categoryId)}
   </button>`;
 }
 
@@ -49,13 +49,11 @@ function viewThreads() {
 function viewThreadDetail(id) {
   const t = threadById(id);
   if (!t) return `${navbar('')}<div class="page"><div class="blank">This thread was removed.</div></div>`;
-  const linked = data.events
-    .filter((e) => e.threadId === t.id && !e.archived)
-    .sort((a, b) => b.dateOccurred.localeCompare(a.dateOccurred) || b.createdAt.localeCompare(a.createdAt));
+  const linked = data.records.filter((e) => (e.threadIds || []).includes(t.id) && !e.archived).sort(newestFirst);
   return `${navbar('', `<button class="nav-btn" data-action="editThread" data-id="${t.id}">Edit</button>`)}
   <div class="page">
     <div class="row-field" style="justify-content:flex-start">
-      <span class="dot" style="width:14px;height:14px;background:#${esc(t.color)}"></span>${badge(t.category)}${t.archived ? '<span class="caption">Archived</span>' : ''}
+      <span class="dot" style="width:14px;height:14px;background:#${esc(t.color)}"></span>${badge(t.categoryId)}${t.archived ? '<span class="caption">Archived</span>' : ''}
     </div>
     <h1>${esc(t.title)}</h1>
     <div class="section">
@@ -67,7 +65,7 @@ function viewThreadDetail(id) {
       ${t.endDate ? `<span class="label">End</span><input class="field" type="date" value="${esc(t.endDate)}" min="${esc(t.startDate)}" data-change="threadEnd" data-id="${t.id}">` : ''}
     </div>
     <div class="section"><span class="label">Linked events</span>
-      ${linked.length ? `<div class="list">${linked.map((e) => eventRow(e, isPastMonth(eventMonth(e)))).join('')}</div>` : '<span class="muted">No linked events.</span>'}
+      ${linked.length ? `<div class="list">${linked.map((e) => eventRow(e, isPastMonth(recordMonth(e)))).join('')}</div>` : '<span class="muted">No linked events.</span>'}
     </div>
     <div class="section" style="margin-top:8px">
       <button class="btn-secondary" data-action="archiveThread" data-id="${t.id}">${t.archived ? 'Unarchive' : 'Archive'}</button>
@@ -83,7 +81,7 @@ function viewThreadEdit() {
   return `${navbar('Edit thread', '<button class="nav-btn strong" data-action="saveThreadEdit" data-valid="threadEdit">Save</button>')}
   <div class="page">
     <div class="section"><span class="label">Title</span><input class="field" type="text" data-bind="te.title" value="${esc(f.title)}" autocomplete="off"></div>
-    <div class="section"><span class="label">Category</span>${chips('te', f.category)}</div>
+    <div class="section"><span class="label">Category</span>${chips('te', f.categoryId)}</div>
     <div class="section"><span class="label">Color</span>${swatches('te', f.color, colors)}</div>
     <div class="section"><span class="label">Start date</span><input class="field" type="date" data-bind="te.start" data-rerender="1" value="${esc(f.start)}"></div>
     <div class="section"><span class="label">End date</span>
@@ -96,6 +94,7 @@ function viewThreadEdit() {
 }
 
 async function updateThread(thread, changes, action = 'update this thread') {
+  changes = { ...changes, updatedAt: new Date().toISOString() };
   const next = { ...thread, ...changes };
   try {
     await DB.write(['threads'], (tx) => tx.objectStore('threads').put(next));
@@ -109,21 +108,23 @@ async function updateThread(thread, changes, action = 'update this thread') {
   return true;
 }
 
-/** Deletes the thread; linked events remain (their link is cleared). */
+/** Deletes the thread; linked records remain (their link to it is removed). */
 async function deleteThread(id, popAfter) {
   const t = threadById(id);
   if (!t) return;
   if (!confirm('Remove this thread? Linked events will remain.')) return;
-  const linked = data.events.filter((e) => e.threadId === id);
+  const linked = data.records.filter((e) => (e.threadIds || []).includes(id));
+  const unlink = (e) => ({ ...e, threadIds: e.threadIds.filter((x) => x !== id), updatedAt: new Date().toISOString() });
+  const updated = linked.map(unlink);
   try {
-    await DB.write(['threads', 'events'], (tx) => {
+    await DB.write(['threads', 'records'], (tx) => {
       tx.objectStore('threads').delete(id);
-      for (const e of linked) tx.objectStore('events').put({ ...e, threadId: null });
+      for (const e of updated) tx.objectStore('records').put(e);
     });
   } catch (error) {
     return fail(error, 'remove this thread');
   }
-  linked.forEach((e) => (e.threadId = null));
+  linked.forEach((e, i) => Object.assign(e, updated[i]));
   data.threads = data.threads.filter((x) => x.id !== id);
   if (popAfter) back();
   else render();
@@ -139,7 +140,7 @@ const actions = {
   editThread(el) {
     const t = threadById(el.dataset.id);
     if (!t) return;
-    state.te = { id: t.id, title: t.title, category: CAT[t.category] ? t.category : null, color: t.color, start: t.startDate, end: t.endDate || t.startDate, ongoing: !t.endDate };
+    state.te = { id: t.id, title: t.title, categoryId: data.categories.some((c) => c.id === t.categoryId) ? t.categoryId : null, color: t.color, start: t.startDate, end: t.endDate || t.startDate, ongoing: !t.endDate };
     push({ name: 'threadEdit', id: t.id });
   },
   async saveThreadEdit() {
@@ -150,7 +151,7 @@ const actions = {
     if (title.toLowerCase() !== t.title.toLowerCase() && data.threads.some((x) => x.id !== t.id && x.title.toLowerCase() === title.toLowerCase())) {
       if (!confirm(`A thread named “${title}” already exists.\n\nBoth threads will be kept separately.`)) return;
     }
-    const ok = await updateThread(t, { title, category: f.category, color: f.color, startDate: f.start, endDate: f.ongoing ? null : f.end });
+    const ok = await updateThread(t, { title, categoryId: f.categoryId, color: f.color, startDate: f.start, endDate: f.ongoing ? null : f.end });
     if (ok) back();
   },
   threadMenu(el) {
@@ -199,7 +200,7 @@ register({
   validators: {
   threadEdit() {
     const f = state.te;
-    return !!f && f.title.trim() !== '' && !!f.category && !!f.start && (f.ongoing || (!!f.end && f.end >= f.start));
+    return !!f && f.title.trim() !== '' && !!f.categoryId && !!f.start && (f.ongoing || (!!f.end && f.end >= f.start));
   },
   },
   bindHook(el) {

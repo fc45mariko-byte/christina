@@ -2,7 +2,7 @@
 import { esc, ymd, addDays, startOfDay, monthStart, maxStr, brightness, F } from '../../core/util.js';
 import { firstWeekday } from '../../core/prefs.js';
 import { LANE_HEIGHT } from '../../core/catalog.js';
-import { eventsBetween, threadsOverlapping, threadHex, categoryHex, lookFor, monthImageKey } from '../../core/queries.js';
+import { recordsBetween, threadsOverlapping, threadHex, categoryHex, recordCategoryId, lookFor, monthImageKey } from '../../core/queries.js';
 import { paletteDots } from '../../ui/components.js';
 function monthWeeks(key) {
   const first = monthStart(key);
@@ -66,8 +66,8 @@ function calendarGrid(weeks, startDate, endDate, palette, readOnly) {
   const threads = threadsOverlapping(startYMD, lastYMD);
   const barHex = new Map(threads.map((t, i) => [t.id, threadHex(t, i, palette)]));
   const byDay = {};
-  for (const e of eventsBetween(startDate, endDate).sort((a, b) => a.dateOccurred.localeCompare(b.dateOccurred))) {
-    const k = ymd(new Date(e.dateOccurred));
+  for (const e of recordsBetween(startDate, endDate).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt))) {
+    const k = ymd(new Date(e.occurredAt));
     (byDay[k] = byDay[k] || []).push(e);
   }
   const todayYMD = ymd(new Date());
@@ -104,7 +104,7 @@ function calendarGrid(weeks, startDate, endDate, palette, readOnly) {
           const items = d ? byDay[ymd(d)] || [] : [];
           const readonlyFlag = readOnly ? 1 : -1;
           return `<div class="cell">${items
-            .map((e) => `<button class="ev-dot" data-action="openEvent" data-id="${e.id}" data-readonly="${readonlyFlag}" aria-label="${esc(e.title)}"><i style="background:#${categoryHex(e.category, palette)}"></i></button>`)
+            .map((e) => `<button class="ev-dot" data-action="openEvent" data-id="${e.id}" data-readonly="${readonlyFlag}" aria-label="${esc(e.title)}"><i style="background:#${categoryHex(recordCategoryId(e), palette)}"></i></button>`)
             .join('')}</div>`;
         })
         .join('');

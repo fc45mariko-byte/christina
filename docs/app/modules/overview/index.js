@@ -1,7 +1,7 @@
 /* Overview (Home tab): the current month at a glance. */
 import { esc, monthTitle, monthName, monthStart, addMonths, currentMonth } from '../../core/util.js';
 import { prefs, Settings } from '../../core/prefs.js';
-import { lookFor, eventsBetween, monthImageKey } from '../../core/queries.js';
+import { lookFor, recordsBetween, newestFirst, monthImageKey } from '../../core/queries.js';
 import { render } from '../../core/render.js';
 import { register } from '../../core/registry.js';
 import { icon } from '../../ui/icons.js';
@@ -10,9 +10,7 @@ function viewHome() {
   const key = currentMonth();
   const look = lookFor(key);
   const start = monthStart(key);
-  const events = eventsBetween(start, monthStart(addMonths(key, 1))).sort(
-    (a, b) => b.dateOccurred.localeCompare(a.dateOccurred) || b.createdAt.localeCompare(a.createdAt)
-  );
+  const events = recordsBetween(start, monthStart(addMonths(key, 1))).sort(newestFirst);
   const standalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
   const hint =
     !standalone && !prefs.hideInstallHint

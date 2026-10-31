@@ -1,21 +1,14 @@
 /* Christina — all data stays on this device (IndexedDB). No sync, no cloud, no API. */
-// Stores: events, threads, months (MonthPersonalization), files.
-// Files are keyed like the spec's folder layout:
-//   photos/<UUID>.jpg  and  months/<YYYY-MM>/<UUID>.jpg
+// Store layout and upgrades live in schema.js.
+import { DB_NAME, DB_VERSION, upgrade } from './schema.js';
 
 const DB = {
   db: null,
 
   open() {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('christina', 1);
-      request.onupgradeneeded = () => {
-        const db = request.result;
-        db.createObjectStore('events', { keyPath: 'id' });
-        db.createObjectStore('threads', { keyPath: 'id' });
-        db.createObjectStore('months', { keyPath: 'month' });
-        db.createObjectStore('files');
-      };
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = (event) => upgrade(request.result, request.transaction, event.oldVersion);
       request.onsuccess = () => {
         this.db = request.result;
         resolve();
@@ -58,7 +51,8 @@ const DB = {
   },
 };
 
-const data = { events: [], threads: [], months: {} };
+/** Loaded data. `records` holds every kind; `categories` is sorted by `order`. */
+const data = { records: [], threads: [], months: {}, categories: [] };
 
 const fileURLs = new Map();
 async function fileURL(key) {

@@ -35,8 +35,11 @@ async function boot() {
   bindEvents();
   try {
     await DB.open();
-    const [events, threads, months] = await Promise.all([DB.getAll('events'), DB.getAll('threads'), DB.getAll('months')]);
-    data.events = events;
+    const [records, threads, months, categories] = await Promise.all(
+      ['records', 'threads', 'months', 'categories'].map((store) => DB.getAll(store))
+    );
+    data.records = records;
+    data.categories = categories.sort((a, b) => a.order - b.order);
     data.threads = threads;
     data.months = Object.fromEntries(months.map((m) => [m.month, m]));
   } catch (error) {

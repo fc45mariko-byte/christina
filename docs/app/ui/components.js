@@ -1,7 +1,8 @@
 /* Christina — shared interface pieces: nav bar, list rows, chips, swatches, toast, action sheet. */
 import { esc, timestamp, $ } from '../core/util.js';
-import { CATEGORIES, THREAD_COLORS, catOf } from '../core/catalog.js';
-import { categoryHex } from '../core/queries.js';
+import { THREAD_COLORS } from '../core/catalog.js';
+import { data } from '../core/db.js';
+import { categoryById, categoryHex, recordCategoryId, recordDuration } from '../core/queries.js';
 import { icon } from './icons.js';
 function navbar(title, right = '') {
   return `<div class="navbar">
@@ -14,26 +15,31 @@ function navbar(title, right = '') {
 const paletteDots = (colors, size = 10) =>
   colors.length ? `<div class="palette">${colors.map((c) => `<i style="background:#${esc(c)};width:${size}px;height:${size}px"></i>`).join('')}</div>` : '';
 
-const catIcon = (name, size = 32, palette = null) => {
-  const c = catOf(name);
-  const hex = categoryHex(name, palette);
+const catIcon = (categoryId, size = 32, palette = null) => {
+  const c = categoryById(categoryId);
+  const hex = categoryHex(categoryId, palette);
   return `<span class="cat-icon" style="width:${size}px;height:${size}px;background:#${hex}2e;color:#${hex}">${icon(c.icon)}</span>`;
 };
 
-const badge = (name) => (name ? `<span class="badge" style="background:#${catOf(name).hex}33">${esc(name)}</span>` : '');
+const badge = (categoryId) => {
+  if (!categoryId) return '';
+  const c = categoryById(categoryId);
+  return `<span class="badge" style="background:#${c.color}33">${esc(c.name)}</span>`;
+};
 
 function eventRow(e, readOnly, palette = null) {
-  const line = e.duration != null ? `${e.title} — ${e.duration} min` : e.title;
+  const duration = recordDuration(e);
+  const line = duration != null ? `${e.title} — ${duration} min` : e.title;
   return `<button class="row" data-action="openEvent" data-id="${e.id}" data-readonly="${readOnly ? 1 : 0}">
-    ${catIcon(e.category, 32, palette)}
-    <span class="row-text"><span class="body">${esc(line)}</span><span class="caption">${esc(timestamp(new Date(e.dateOccurred)))}</span></span>
+    ${catIcon(recordCategoryId(e), 32, palette)}
+    <span class="row-text"><span class="body">${esc(line)}</span><span class="caption">${esc(timestamp(new Date(e.occurredAt)))}</span></span>
   </button>`;
 }
 
 function chips(form, selected) {
-  return `<div class="chips">${CATEGORIES.map((c) => {
-    const on = selected === c.name;
-    return `<button class="chip${on ? ' on' : ''}" style="${on ? `background:#${c.hex}` : ''}" data-action="pickCategory" data-form="${form}" data-category="${c.name}" aria-pressed="${on}">${icon(c.icon)}<span>${c.name}</span></button>`;
+  return `<div class="chips">${data.categories.map((c) => {
+    const on = selected === c.id;
+    return `<button class="chip${on ? ' on' : ''}" style="${on ? `background:#${esc(c.color)}` : ''}" data-action="pickCategory" data-form="${form}" data-category="${esc(c.id)}" aria-pressed="${on}">${icon(c.icon)}<span>${esc(c.name)}</span></button>`;
   }).join('')}</div>`;
 }
 

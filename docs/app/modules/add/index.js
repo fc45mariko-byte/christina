@@ -1,7 +1,7 @@
 /* Add (+ tab): "I did something" records an event, "I want this to happen" starts a thread. */
 import { esc, uuid, localInputValue, rangeText, monthTitle, $ } from '../../core/util.js';
 import { DB, data, blobRecord, requestPersistence } from '../../core/db.js';
-import { threadById, eventMonth } from '../../core/queries.js';
+import { threadById, recordMonth } from '../../core/queries.js';
 import { state, newEventForm, newThreadForm } from '../../core/state.js';
 import { render } from '../../core/render.js';
 import { register, registry } from '../../core/registry.js';
@@ -30,7 +30,7 @@ function eventFormHTML() {
     <div class="section"><span class="label">Title</span>
       <input class="field" type="text" data-bind="ef.title" value="${esc(f.title)}" placeholder="e.g. Studied Spanish" enterkeyhint="done" autocomplete="off">
     </div>
-    <div class="section"><span class="label">Category</span>${chips('ef', f.category)}</div>
+    <div class="section"><span class="label">Category</span>${chips('ef', f.categoryId)}</div>
     <div class="section"><span class="label">Duration (minutes, optional)</span>
       <input class="field" type="text" inputmode="numeric" pattern="[0-9]*" data-bind="ef.duration" value="${esc(f.duration)}" placeholder="e.g. 25">
       <span class="caption danger hidden" id="durationError">Enter a whole number of minutes.</span>
@@ -74,7 +74,7 @@ function threadFormHTML() {
           : `<input class="field" type="text" data-bind="tf.title" value="${esc(f.title)}" placeholder="e.g. Master applications" enterkeyhint="done" autocomplete="off">`
       }
     </div>
-    <div class="section"><span class="label">Category</span>${chips('tf', f.category)}</div>
+    <div class="section"><span class="label">Category</span>${chips('tf', f.categoryId)}</div>
     <div class="section"><span class="label">Thread</span>
       <select class="field" data-bind="tf.tieTo" data-rerender="1">
         <option value="">Create a new thread</option>
@@ -94,37 +94,42 @@ function threadFormHTML() {
 async function saveEvent() {
   const f = state.ef;
   if (!registry.validators.event()) return;
+  const now = new Date().toISOString();
   const event = {
     id: uuid(),
-    dateOccurred: new Date(f.date).toISOString(),
-    category: f.category,
+    kind: 'activity',
+    occurredAt: new Date(f.date).toISOString(),
     title: f.title.trim(),
-    duration: f.duration.trim() ? Number(f.duration.trim()) : null,
-    notes: f.notes.trim() || null,
-    photoPath: null,
-    threadId: f.threadId && threadById(f.threadId) ? f.threadId : null,
-    createdAt: new Date().toISOString(),
+    text: f.notes.trim() || null,
+    categoryIds: [f.categoryId],
+    threadIds: f.threadId && threadById(f.threadId) ? [f.threadId] : [],
+    tagIds: [],
+    mediaIds: [],
+    linkedRecordIds: [],
+    payload: { duration: f.duration.trim() ? Number(f.duration.trim()) : null },
     archived: false,
+    createdAt: now,
+    updatedAt: now,
   };
   try {
     let record = null;
     if (f.photo) {
       await ensureSpace(f.photo.size);
-      event.photoPath = `photos/${uuid()}.jpg`;
+      event.mediaIds = [`photos/${uuid()}.jpg`];
       record = await blobRecord(f.photo);
     }
-    await DB.write(['events', 'files'], (tx) => {
-      if (record) tx.objectStore('files').put(record, event.photoPath);
-      tx.objectStore('events').put(event);
+    await DB.write(['records', 'files'], (tx) => {
+      if (record) tx.objectStore('files').put(record, event.mediaIds[0]);
+      tx.objectStore('records').put(event);
     });
   } catch (error) {
     return fail(error, 'save this event');
   }
   requestPersistence();
-  data.events.push(event);
+  data.records.push(event);
   if (f.photoURL) URL.revokeObjectURL(f.photoURL);
   state.ef = newEventForm();
-  toast(`Saved to ${monthTitle(eventMonth(event))}`);
+  toast(`Saved to ${monthTitle(recordMonth(event))}`);
   state.tab = 'home';
   state.stacks.home = [];
   render();
@@ -138,15 +143,17 @@ async function saveThread(skipDuplicateCheck = false) {
   if (!tied && !skipDuplicateCheck && data.threads.some((t) => t.title.toLowerCase() === title.toLowerCase())) {
     if (!confirm(`A thread named “${title}” already exists.\n\nIt will be saved as a separate thread.`)) return;
   }
+  const now = new Date().toISOString();
   const thread = {
     id: uuid(),
     title,
-    category: f.category,
+    categoryId: f.categoryId,
     color: tied ? tied.color : f.color,
     startDate: f.start,
     endDate: f.ongoing ? null : f.end,
     archived: false,
-    createdAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
   };
   try {
     await DB.write(['threads'], (tx) => tx.objectStore('threads').put(thread));
@@ -173,12 +180,12 @@ register({
     const durationOK = d === '' || (/^\d+$/.test(d) && Number(d) > 0);
     const err = $('#durationError');
     if (err) err.classList.toggle('hidden', durationOK);
-    return f.title.trim() !== '' && !!f.category && durationOK && !!f.date && !f.processing;
+    return f.title.trim() !== '' && !!f.categoryId && durationOK && !!f.date && !f.processing;
   },
   thread() {
     const f = state.tf;
     const title = f.tieTo ? (threadById(f.tieTo) || {}).title : f.title.trim();
-    return !!title && !!f.category && !!f.start && (f.ongoing || (!!f.end && f.end >= f.start));
+    return !!title && !!f.categoryId && !!f.start && (f.ongoing || (!!f.end && f.end >= f.start));
   },
   },
   actions: {
@@ -187,7 +194,7 @@ register({
     render();
   },
   pickCategory(el) {
-    state[el.dataset.form].category = el.dataset.category;
+    state[el.dataset.form].categoryId = el.dataset.category;
     render();
   },
   pickColor(el) {

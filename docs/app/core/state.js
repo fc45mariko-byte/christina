@@ -17,11 +17,11 @@ const state = {
 };
 
 function newEventForm() {
-  return { date: localInputValue(new Date()), title: '', category: null, duration: '', threadId: '', notes: '', photo: null, photoURL: null, processing: false };
+  return { date: localInputValue(new Date()), title: '', categoryId: null, duration: '', threadId: '', notes: '', photo: null, photoURL: null, processing: false };
 }
 function newThreadForm() {
   const today = ymd(new Date());
-  return { start: today, end: today, ongoing: false, title: '', category: null, tieTo: '', color: THREAD_COLORS[0] };
+  return { start: today, end: today, ongoing: false, title: '', categoryId: null, tieTo: '', color: THREAD_COLORS[0] };
 }
 state.ef = newEventForm();
 state.tf = newThreadForm();

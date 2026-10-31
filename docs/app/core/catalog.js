@@ -1,16 +1,17 @@
 /* Christina — fixed catalogues: categories, thread colours, palettes, layout constants. */
 const CATEGORIES = [
-  { name: 'Study', hex: '4A90E2', icon: 'book' },
-  { name: 'Work', hex: '7B68EE', icon: 'briefcase' },
-  { name: 'Body', hex: 'FF6B9D', icon: 'activity' },
-  { name: 'Social', hex: 'FFB347', icon: 'users' },
-  { name: 'Personal', hex: '50C878', icon: 'user' },
-  { name: 'Home', hex: 'D4AF37', icon: 'home' },
-  { name: 'Enjoyed', hex: 'FF69B4', icon: 'heart' },
-  { name: 'Other', hex: 'A9A9A9', icon: 'more' },
+  { id: 'cat-study', name: 'Study', hex: '4A90E2', icon: 'book' },
+  { id: 'cat-work', name: 'Work', hex: '7B68EE', icon: 'briefcase' },
+  { id: 'cat-body', name: 'Body', hex: 'FF6B9D', icon: 'activity' },
+  { id: 'cat-social', name: 'Social', hex: 'FFB347', icon: 'users' },
+  { id: 'cat-personal', name: 'Personal', hex: '50C878', icon: 'user' },
+  { id: 'cat-home', name: 'Home', hex: 'D4AF37', icon: 'home' },
+  { id: 'cat-enjoyed', name: 'Enjoyed', hex: 'FF69B4', icon: 'heart' },
+  { id: 'cat-other', name: 'Other', hex: 'A9A9A9', icon: 'more' },
 ];
-const CAT = Object.fromEntries(CATEGORIES.map((c) => [c.name, c]));
-const catOf = (name) => CAT[name] || CAT.Other;
+// Preset categories are seeded into the categories store. Unknown names map to Other, as before.
+const OTHER_CATEGORY_ID = 'cat-other';
+const categoryIdForName = (name) => (CATEGORIES.find((c) => c.name === name) || { id: OTHER_CATEGORY_ID }).id;
 
 const THREAD_COLORS = ['FF6B9D', '4A90E2', '7B68EE', 'FFB347', '50C878', 'D4AF37', 'FF69B4', '2EC4B6', 'E07A5F', 'A9A9A9'];
 
@@ -27,4 +28,4 @@ const PALETTES = [
 
 const MAX_MONTH_IMAGES = 12;
 const LANE_HEIGHT = 31; // label 15 + 2 + bar 10 + 4
-export { CATEGORIES, CAT, catOf, THREAD_COLORS, PALETTES, MAX_MONTH_IMAGES, LANE_HEIGHT };
+export { CATEGORIES, OTHER_CATEGORY_ID, categoryIdForName, THREAD_COLORS, PALETTES, MAX_MONTH_IMAGES, LANE_HEIGHT };

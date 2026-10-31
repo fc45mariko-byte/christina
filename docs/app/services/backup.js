@@ -2,11 +2,12 @@
  * Nothing leaves the device unless the person chooses where to save or share the file. */
 import { DB, data } from '../core/db.js';
 import { ymd } from '../core/util.js';
-import { catOf } from '../core/catalog.js';
-import { threadById } from '../core/queries.js';
+import { DATA_STORES, DB_VERSION } from '../core/schema.js';
+import { threadById, categoryById, recordCategoryId, recordThreadId, recordDuration } from '../core/queries.js';
 
 const BACKUP_FORMAT = 'christina-backup';
-const BACKUP_VERSION = 1;
+// Version 2: every data store of database schema 2, under `stores`.
+const BACKUP_VERSION = 2;
 
 function blobToDataURL(blob) {
   return new Promise((resolve, reject) => {
@@ -73,10 +74,9 @@ async function buildBackup() {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
+    schemaVersion: DB_VERSION,
     prefs: readPrefs(),
-    events: data.events,
-    threads: data.threads,
-    months: Object.values(data.months),
+    stores: Object.fromEntries(await Promise.all(DATA_STORES.map(async (name) => [name, await DB.getAll(name)]))),
     files,
   };
 }
@@ -95,20 +95,22 @@ function csvCell(value) {
 }
 
 function buildEventsCSV() {
-  const rows = [...data.events]
-    .sort((a, b) => a.dateOccurred.localeCompare(b.dateOccurred))
+  const rows = data.records
+    .filter((r) => r.kind === 'activity')
+    .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt))
     .map((e) => {
-      const t = e.threadId ? threadById(e.threadId) : null;
+      const threadId = recordThreadId(e);
+      const t = threadId ? threadById(threadId) : null;
       return [
-        e.dateOccurred,
+        e.occurredAt,
         e.title,
-        catOf(e.category).name,
-        e.duration,
+        categoryById(recordCategoryId(e)).name,
+        recordDuration(e),
         t ? t.title : '',
         t ? t.startDate : '',
         t ? t.endDate || '' : '',
-        e.notes,
-        e.photoPath ? 'yes' : 'no',
+        e.text,
+        (e.mediaIds || []).length ? 'yes' : 'no',
         e.archived ? 'yes' : 'no',
         e.id,
       ];

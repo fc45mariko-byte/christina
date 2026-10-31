@@ -1,6 +1,5 @@
 /* Settings: appearance, calendar, categories, data & export, privacy, about. */
 import { esc } from '../../core/util.js';
-import { CATEGORIES } from '../../core/catalog.js';
 import { prefs, Settings } from '../../core/prefs.js';
 import { data } from '../../core/db.js';
 import { push } from '../../core/state.js';
@@ -49,8 +48,8 @@ function viewCalendarSettings() {
 
 function viewCategories() {
   return `${navbar('Categories')}<div class="page tight">
-    <div class="settings-list">${CATEGORIES.map(
-      (c) => `<div class="settings-row">${catIcon(c.name, 28)}<span class="grow">${c.name}</span><span class="caption">#${c.hex}</span></div>`
+    <div class="settings-list">${data.categories.map(
+      (c) => `<div class="settings-row">${catIcon(c.id, 28)}<span class="grow">${esc(c.name)}</span><span class="caption">#${esc(c.color)}</span></div>`
     ).join('')}</div>
     <p class="footnote">Preset list. Custom categories are not in this build.</p>
   </div>`;
@@ -82,7 +81,7 @@ function viewAbout() {
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 function viewData() {
-  const photos = data.events.filter((e) => e.photoPath).length;
+  const photos = data.records.reduce((n, r) => n + (r.mediaIds || []).length, 0);
   const images = Object.values(data.months).reduce((n, m) => n + ((m.imagePaths || []).length), 0);
   return `${navbar('Data & Export')}<div class="page tight">
     <div class="settings-list">
@@ -90,7 +89,7 @@ function viewData() {
       <button class="settings-row" data-action="exportCSV">${icon('share', 'ic')}<span class="grow">Export events</span><span class="label">CSV</span></button>
       <div class="settings-row"><span class="grow">iCloud backup</span><span class="label">Not in this build</span></div>
     </div>
-    <p class="footnote">The backup holds every event, thread, month, photo and setting (${plural(data.events.length, 'event', 'events')}, ${plural(data.threads.length, 'thread', 'threads')}, ${plural(photos + images, 'photo', 'photos')}). The CSV lists events only, for spreadsheets. Both are saved as files you choose where to keep. All data stays on this device.</p>
+    <p class="footnote">The backup holds every event, thread, month, photo and setting (${plural(data.records.length, 'event', 'events')}, ${plural(data.threads.length, 'thread', 'threads')}, ${plural(photos + images, 'photo', 'photos')}). The CSV lists events only, for spreadsheets. Both are saved as files you choose where to keep. All data stays on this device.</p>
   </div>`;
 }
 
