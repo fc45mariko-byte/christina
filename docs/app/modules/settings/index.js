@@ -7,26 +7,48 @@ import { render } from '../../core/render.js';
 import { register } from '../../core/registry.js';
 import { navbar, catIcon, settingsRow, toast } from '../../ui/components.js';
 import { icon } from '../../ui/icons.js';
-import { exportBackup, exportEventsCSV } from '../../services/backup.js';
+import { exportBackup, exportEventsCSV, readBackup, restoreBackup, eraseEverything } from '../../services/backup.js';
+import { appearance, setAppearance, resetAppearance, ACCENTS } from '../../core/appearance.js';
 import './personalize.js';
+import './organize.js';
 function viewSettings() {
   return `<div class="page"><h1>Settings</h1>
     <div class="settings-list">
       ${settingsRow('Appearance', 'palette', 'openAppearance')}
       ${settingsRow('Tab bar', 'grid', 'openNavigation')}
+      ${settingsRow('Sections', 'eye', 'openSections')}
       ${settingsRow('Calendar &amp; Time', 'calendar', 'openCalendarSettings')}
+      ${settingsRow('Reminders', 'bell', 'openNotifications')}
+    </div>
+    <div class="settings-list">
       ${settingsRow('Categories', 'grid', 'openCategories')}
+      ${settingsRow('Tags', 'flag', 'openTags')}
+    </div>
+    <div class="settings-list">
       ${settingsRow('Data &amp; Export', 'drive', 'openData')}
-      ${settingsRow('Notifications', 'bell', 'openNotifications')}
       ${settingsRow('Privacy', 'lock', 'openPrivacy')}
       ${settingsRow('About', 'info', 'openAbout')}
     </div></div>`;
 }
 
+const choice = (key, options) =>
+  `<div class="segmented">${options.map(([v, l]) => `<button class="${appearance[key] === v ? 'on' : ''}" data-action="setAppearance" data-k="${key}" data-v="${v}">${l}</button>`).join('')}</div>`;
+
 function viewAppearance() {
-  return `${navbar('Appearance')}<div class="page tight">
+  return `${navbar('Appearance')}<div class="page">
+    <div class="section"><span class="label">Theme</span>${choice('theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']])}</div>
+    <div class="section"><span class="label">Accent</span>
+      <div class="swatches">${ACCENTS.map(([hex, name]) => `<button class="swatch${appearance.accent === hex ? ' on' : ''}" data-action="setAppearance" data-k="accent" data-v="${hex}" aria-label="${name}" aria-pressed="${appearance.accent === hex}"><span style="background:${hex ? `#${hex}` : 'var(--text)'}"></span></button>`).join('')}</div>
+      <span class="caption">Buttons, the + button, checks, progress and charts. Ink follows the theme.</span>
+    </div>
+    <div class="section"><span class="label">Background</span>${choice('bg', [['plain', 'Plain'], ['paper', 'Paper'], ['mist', 'Mist']])}</div>
+    <div class="section"><span class="label">Font</span>${choice('font', [['system', 'System'], ['serif', 'Serif'], ['rounded', 'Rounded']])}</div>
+    <div class="section"><span class="label">Density</span>${choice('density', [['comfortable', 'Comfortable'], ['compact', 'Compact']])}</div>
+    <div class="section"><span class="label">Overview widgets</span>${choice('cards', [['filled', 'Filled'], ['outline', 'Outlined']])}</div>
     <div class="settings-list">${settingsRow('Personalized Mode', 'palette', 'openPersonalize')}</div>
-    <p class="footnote">Give each month its own images, colors and title.</p>
+    <p class="footnote" style="padding:0">Give each month its own images, colors and title.</p>
+    <button class="btn-secondary" data-action="resetAppearance">Back to Christina’s original look</button>
+    <p class="footnote" style="padding:0">Body Oracle keeps its own accent, card and corner settings in its Settings → Theme and Corners.</p>
   </div>`;
 }
 
@@ -47,34 +69,28 @@ function viewCalendarSettings() {
   </div>`;
 }
 
-function viewCategories() {
-  return `${navbar('Categories')}<div class="page tight">
-    <div class="settings-list">${data.categories.map(
-      (c) => `<div class="settings-row">${catIcon(c.id, 28)}<span class="grow">${esc(c.name)}</span><span class="caption">#${esc(c.color)}</span></div>`
-    ).join('')}</div>
-    <p class="footnote">To add, rename, recolor or reorder categories, open Body Oracle → Settings → Categories. They are shared across Christina.</p>
-  </div>`;
-}
-
-function viewNotInBuild(title, rows, note) {
-  return `${navbar(title)}<div class="page tight">
-    <div class="settings-list">${rows.map((r) => `<div class="settings-row"><span class="grow">${esc(r)}</span><span class="label">Not in this build</span></div>`).join('')}</div>
-    ${note ? `<p class="footnote">${esc(note)}</p>` : ''}
+function viewReminders() {
+  return `${navbar('Reminders')}<div class="page tight">
+    <div class="settings-list"><div class="settings-row"><span class="grow">Show due reminders</span><label class="toggle"><input type="checkbox" data-change="setShowReminders" ${prefs.showReminders !== false ? 'checked' : ''}><span></span></label></div></div>
+    <p class="footnote">When a plan's reminder time comes, it appears at the top of Overview and as a message when you open Christina, until you dismiss it. Add a reminder when you plan something in the Calendar.</p>
+    <p class="footnote">Christina cannot send notifications to your lock screen: on iPhone a web app can only do that through a push server, and Christina keeps everything on your device with no server.</p>
   </div>`;
 }
 
 function viewPrivacy() {
   return `${navbar('Privacy')}<div class="page tight">
     <h1>Everything stays on this device.</h1>
-    <p>Events, threads, photos and month personalization are stored only in this app's storage on your iPhone. Nothing is synced, uploaded or sent to any server. There is no account and no API.</p>
+    <p>Events, threads, journal entries, Body Oracle records, plans, tasks, projects, habits, photos, videos and settings are stored only in this app's storage on this device. Nothing is synced, uploaded or sent to any server. There is no account, no tracking, no API and no AI.</p>
+    <p style="margin:0">Because nothing leaves the device, nothing else holds a copy. Removing the app from the Home Screen or clearing the website's data deletes everything. Export a backup now and then (Settings → Data &amp; Export) and keep the file somewhere safe.</p>
   </div>`;
 }
 
 function viewAbout() {
   return `${navbar('About')}<div class="page tight">
     <h1>Christina</h1>
-    <span class="label">Version 1.0</span>
+    <span class="label">Version 2.0</span>
     <p style="margin-top:16px">A visual system for seeing life accumulate over time.</p>
+    <p style="margin:0">With Body Oracle, Journal, Calendar, Tasks, Projects, Habits and Insights.</p>
     <p style="margin:0">What actually happened?</p>
     <p style="margin:0">Evidence over guilt. Temporal continuity over streaks.</p>
   </div>`;
@@ -90,6 +106,11 @@ function viewData() {
       <button class="settings-row" data-action="exportCSV">${icon('share', 'ic')}<span class="grow">Export events</span><span class="label">CSV</span></button>
       <div class="settings-row"><span class="grow">iCloud backup</span><span class="label">Not in this build</span></div>
     </div>
+    <div class="settings-list">
+      <label class="settings-row file-btn">${icon('share', 'ic')}<span class="grow">Restore from a backup</span><input type="file" accept="application/json,.json" data-file-input="restoreBackup"></label>
+      <button class="settings-row" data-action="eraseEverything">${icon('x', 'ic')}<span class="grow danger">Erase everything</span></button>
+    </div>
+    <p class="footnote">Restoring replaces everything on this device with the backup. Erasing deletes everything Christina holds on this device. Both ask first. A Body Oracle backup is restored from Body Oracle → Settings → Backup.</p>
     <p class="footnote">The backup holds every event, thread, month, photo and setting (${plural(data.records.length, 'event', 'events')}, ${plural(data.threads.length, 'thread', 'threads')}, ${plural(photos + images, 'photo', 'photos')}). The CSV lists events only, for spreadsheets. Both are saved as files you choose where to keep. All data stays on this device.</p>
   </div>`;
 }
@@ -105,14 +126,33 @@ async function runExport(work, label) {
 }
 
 register({
+  fileActions: {
+    async restoreBackup(files) {
+      let backup;
+      try {
+        backup = await readBackup(files[0]);
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+      if (!confirm(`Replace everything on this device with this backup from ${backup.when}? It holds ${backup.summary}.`)) return;
+      try {
+        await restoreBackup(backup.data);
+      } catch (error) {
+        console.error(error);
+        alert(`Couldn't restore. ${error && error.message ? error.message : error} Nothing was changed.`);
+        return;
+      }
+      location.reload();
+    },
+  },
   nav: { id: 'settings', label: 'Settings', icon: 'settings', order: 90 },
   tabs: { settings: viewSettings },
   screens: {
     appearance: () => viewAppearance(),
     calendarSettings: () => viewCalendarSettings(),
-    categories: () => viewCategories(),
     data: () => viewData(),
-    notifications: () => viewNotInBuild('Notifications', ['Notifications'], ''),
+    notifications: () => viewReminders(),
     privacy: () => viewPrivacy(),
     about: () => viewAbout(),
   },
@@ -125,12 +165,37 @@ register({
   openPrivacy: () => push({ name: 'privacy' }),
   openAbout: () => push({ name: 'about' }),
     exportBackup: () => runExport(exportBackup, 'Backup'),
+    setAppearance(el) {
+      setAppearance(el.dataset.k, el.dataset.v);
+      render();
+    },
+    resetAppearance() {
+      resetAppearance();
+      render();
+    },
+    async eraseEverything() {
+      if (!confirm('Erase everything Christina holds on this device? Events, journal, Body Oracle, plans, tasks, projects, habits, photos and settings are all deleted. This cannot be undone.')) return;
+      if (!confirm('Are you sure? Export a backup first if you might want any of it back.')) return;
+      try {
+        await eraseEverything();
+      } catch (error) {
+        console.error(error);
+        alert(`Couldn't erase. ${error && error.message ? error.message : error}`);
+        return;
+      }
+      location.reload();
+    },
     exportCSV: () => runExport(exportEventsCSV, 'CSV'),
   },
   changeActions: {
   setStartDay(el) {
     prefs.mondayFirst = el.value === 'mon';
     Settings.write('mondayFirst', prefs.mondayFirst);
+    render();
+  },
+  setShowReminders(el) {
+    prefs.showReminders = el.checked;
+    Settings.write('showReminders', el.checked);
     render();
   },
   setWeekView(el) {

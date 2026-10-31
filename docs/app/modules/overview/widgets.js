@@ -6,6 +6,7 @@ import { esc, ymd, monthTitle, monthName, monthStart, addMonths, currentMonth, F
 import { data } from '../../core/db.js';
 import { lookFor, recordsBetween, newestFirst, monthImageKey, recordTitle } from '../../core/queries.js';
 import { register, registry } from '../../core/registry.js';
+import { prefs } from '../../core/prefs.js';
 import { render } from '../../core/render.js';
 import { icon } from '../../ui/icons.js';
 import { paletteDots, recordRow, fail } from '../../ui/components.js';
@@ -61,6 +62,7 @@ function today(size) {
 // ------------------------------------------------------------ Reminders, Upcoming
 
 function reminders() {
+  if (prefs.showReminders === false) return '';
   const due = dueReminders();
   if (!due.length) return '';
   return `${head('Reminders')}<div class="list">${due

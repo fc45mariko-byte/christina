@@ -104,4 +104,4 @@ function upgrade(db, tx, oldVersion) {
   };
 }
 
-export { DB_NAME, DB_VERSION, DATA_STORES, upgrade, activityFromV1, threadFromV1 };
+export { DB_NAME, DB_VERSION, DATA_STORES, upgrade, activityFromV1, threadFromV1, presetCategories };

@@ -17,13 +17,15 @@ const SLOT_COUNT = 4;
 const DEFAULT_SLOTS = ['home', 'map', 'journal', 'threads'];
 const WIDE = window.matchMedia('(min-width: 900px)');
 
-const navItems = () => [...registry.nav].sort((a, b) => a.order - b.order);
+/** Sections the person hid in Settings → Sections are left out everywhere. */
+const isHidden = (id) => (prefs.hiddenModules || []).includes(id) && id !== 'home' && id !== 'settings';
+const navItems = () => [...registry.nav].filter((n) => !isHidden(n.id)).sort((a, b) => a.order - b.order);
 const navItem = (id) => registry.nav.find((n) => n.id === id);
 const isWide = () => WIDE.matches;
 
 /** The four tab-bar slots: saved choice, cleaned of unknown or repeated modules, filled from the defaults. */
 function tabSlots() {
-  const known = new Set(registry.nav.map((n) => n.id));
+  const known = new Set(navItems().map((n) => n.id));
   const saved = Array.isArray(prefs.tabSlots) ? prefs.tabSlots : [];
   const slots = [];
   for (const id of [...saved, ...DEFAULT_SLOTS, ...navItems().map((n) => n.id)]) {

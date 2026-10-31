@@ -14,6 +14,17 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
+  <script>
+    // Apply saved appearance before the first paint (the same logic as app/core/appearance.js).
+    try {
+      var a = JSON.parse(localStorage.getItem('christina.appearance') || '{}'), r = document.documentElement;
+      if (a.theme && a.theme !== 'system') r.setAttribute('data-theme', a.theme);
+      if (a.bg && a.bg !== 'plain') r.setAttribute('data-bg', a.bg);
+      if (a.font && a.font !== 'system') r.setAttribute('data-font', a.font);
+      if (a.density && a.density !== 'comfortable') r.setAttribute('data-density', a.density);
+      if (a.cards && a.cards !== 'filled') r.setAttribute('data-cards', a.cards);
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="app/ui/tokens.css">
   <link rel="stylesheet" href="app/ui/base.css">
   <link rel="stylesheet" href="app/ui/components.css">

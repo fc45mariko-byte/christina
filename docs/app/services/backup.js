@@ -2,7 +2,7 @@
  * Nothing leaves the device unless the person chooses where to save or share the file. */
 import { DB, data } from '../core/db.js';
 import { ymd } from '../core/util.js';
-import { DATA_STORES, DB_VERSION } from '../core/schema.js';
+import { DATA_STORES, DB_VERSION, activityFromV1, threadFromV1, presetCategories } from '../core/schema.js';
 import { threadById, categoryById, recordCategoryId, recordThreadId, recordDuration } from '../core/queries.js';
 
 const BACKUP_FORMAT = 'christina-backup';
@@ -128,3 +128,94 @@ async function exportEventsCSV() {
 }
 
 export { exportBackup, exportEventsCSV, buildBackup, buildEventsCSV, BACKUP_FORMAT, BACKUP_VERSION };
+
+// ------------------------------------------------------------ restore and erase
+
+function dataURLToBlob(url) {
+  const [head, body] = url.split(',');
+  const type = (/data:([^;]+)/.exec(head) || [])[1] || 'application/octet-stream';
+  const bin = atob(body);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type });
+}
+
+/** Reads a Christina backup file (format version 1 or 2) and describes it, without changing anything. */
+async function readBackup(file) {
+  let backup;
+  try {
+    backup = JSON.parse(await file.text());
+  } catch {
+    throw new Error('That file is not a Christina backup.');
+  }
+  if (!backup || backup.format !== BACKUP_FORMAT) {
+    if (backup && backup.app === 'body-oracle') throw new Error('This is a Body Oracle backup. Restore it from Body Oracle → Settings → Backup.');
+    throw new Error('That file is not a Christina backup.');
+  }
+  const records = backup.version >= 2 ? (backup.stores.records || []).length : (backup.events || []).length;
+  const files = Object.keys(backup.files || {}).length;
+  return {
+    data: backup,
+    when: new Date(backup.exportedAt).toLocaleString(),
+    summary: `${records} ${records === 1 ? 'record' : 'records'} and ${files} ${files === 1 ? 'photo' : 'photos'}`,
+  };
+}
+
+/** Replaces everything with the backup, in one transaction: if anything fails, nothing changes. */
+async function restoreBackup(backup) {
+  const now = new Date().toISOString();
+  let stores;
+  if (backup.version >= 2) {
+    stores = backup.stores;
+  } else {
+    stores = {
+      records: (backup.events || []).map((e) => activityFromV1(e, now)),
+      threads: (backup.threads || []).map((t) => threadFromV1(t, now)),
+      months: backup.months || [],
+      categories: presetCategories(now),
+    };
+  }
+  const files = Object.entries(backup.files || {}).map(([key, url]) => [key, dataURLToBlob(url)]);
+  await DB.write([...DATA_STORES, 'files', 'meta'], (tx) => {
+    for (const name of DATA_STORES) {
+      const store = tx.objectStore(name);
+      store.clear();
+      (stores[name] || []).forEach((row) => store.put(row));
+    }
+    if (!(stores.categories || []).length) presetCategories(now).forEach((c) => tx.objectStore('categories').put(c));
+    const fileStore = tx.objectStore('files');
+    fileStore.clear();
+    files.forEach(([key, blob]) => fileStore.put(blob, key));
+    const meta = tx.objectStore('meta');
+    (backup.settings || []).forEach((row) => row.key !== 'schema' && meta.put(row));
+    // Don't bring the old Body Oracle database in on top of a restored backup.
+    meta.put({ key: 'bodyOracleImport', skipped: true, reason: 'restored from a backup', at: now });
+  });
+  try {
+    for (const key of Object.keys(localStorage)) if (key.startsWith('christina.')) localStorage.removeItem(key);
+    for (const [key, value] of Object.entries(backup.prefs || {})) localStorage.setItem(`christina.${key}`, JSON.stringify(value));
+  } catch {
+    /* private mode — preferences stay as they are */
+  }
+}
+
+/** Deletes everything Christina holds on this device. The old Body Oracle database is not brought back in. */
+async function eraseEverything() {
+  const now = new Date().toISOString();
+  await DB.write([...DATA_STORES, 'files', 'meta', 'legacy'], (tx) => {
+    DATA_STORES.forEach((name) => tx.objectStore(name).clear());
+    tx.objectStore('files').clear();
+    tx.objectStore('legacy').clear();
+    tx.objectStore('meta').clear();
+    tx.objectStore('meta').put({ key: 'schema', version: DB_VERSION, erasedAt: now });
+    tx.objectStore('meta').put({ key: 'bodyOracleImport', skipped: true, reason: 'erased', at: now });
+    presetCategories(now).forEach((c) => tx.objectStore('categories').put(c));
+  });
+  try {
+    for (const key of Object.keys(localStorage)) if (key.startsWith('christina.')) localStorage.removeItem(key);
+  } catch {
+    /* nothing stored */
+  }
+}
+
+export { readBackup, restoreBackup, eraseEverything };

@@ -75,7 +75,7 @@ Insights are computed on demand and always link to the records they were counted
 6. **Dashboard widgets, sizes and layouts.** — done
 7. **Calendar events, Tasks, Projects, Habits.** — done (built before step 6 so the dashboard has real data)
 8. **Insights.** — done
-9. Appearance and customisation settings.
+9. **Appearance and customisation settings.** — done
 10. Tests on phone and desktop sizes, preview deploy, cut-over.
 
 ## Decisions
@@ -319,3 +319,34 @@ colour alone.
 Verified with four weeks of seeded records: totals match the seeded counts, time by category, the planted
 "recorded together" pattern is found and worded without cause, a bar opens exactly its records, period switching,
 the Overview widget, light and dark, no console errors.
+
+## Step 9 — what changed
+
+**Settings → Appearance** (`core/appearance.js`, saved per device as `christina.appearance`, applied before the
+first paint by a small script in `index.html`):
+Theme (System / Light / Dark), Accent (Ink — the original — Blue, Violet, Rose, Green, Gold), Background
+(Plain / Paper / Mist), Font (System / Serif / Rounded), Density (Comfortable / Compact), Overview widgets
+(Filled / Outlined), Personalized Mode, and "Back to Christina's original look". Every dark-mode rule now also
+answers to the chosen theme. Body Oracle follows the accent unless its own accent is set.
+
+**Organization:**
+- **Categories** (Settings → Categories): add, rename, recolour (presets or any colour), choose an icon, reorder,
+  delete (records in a deleted category show under Other; Other cannot be deleted; names must be unique).
+  Shared by every section and used as the calendar's colours.
+- **Tags** (Settings → Tags): rename, delete (removed from every entry that has it), with how often each is used.
+- **Sections** (Settings → Sections): hide sections you don't use; they leave the tab bar, More and the sidebar.
+  Nothing is deleted.
+
+**Settings cleanup:**
+- "Notifications — Not in this build" is now **Reminders**: show or hide due reminders, and an explanation of why a
+  web app on iPhone can't send lock-screen notifications without a server.
+- **Data & Export** adds **Restore from a backup** (Christina backups, format 1 or 2; replaces everything in one
+  transaction, or nothing on failure) and **Erase everything** (asks twice). "iCloud backup" still reads
+  "Not in this build".
+- Privacy and About describe the whole app.
+- Journal tag filter and Archive kind filter use the shared pill control.
+
+Verified: each appearance option (computed colours and fonts checked), applied on reload before first paint,
+Body Oracle following the accent, reset; category add / duplicate refused / reorder / rename / delete with fallback /
+Other protected; tag rename and delete; hiding sections; reminders screen; backup → change → restore round trip;
+erase everything; no console errors.

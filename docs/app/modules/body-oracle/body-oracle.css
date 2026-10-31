@@ -11,13 +11,13 @@
   --surface-2: #ebebe7;
   --line: var(--hair);
   --line-2: rgba(0, 0, 0, 0.14);
-  --accent: var(--bo-accent, var(--text));
-  --accent-ink: var(--bo-accent-ink, var(--bg));
+  --accent: var(--bo-accent, var(--ui-accent));
+  --accent-ink: var(--bo-accent-ink, var(--ui-accent-ink));
   --fig-a: rgba(0, 0, 0, 0.09);
   --fig-b: rgba(0, 0, 0, 0.03);
   --fig-stroke: rgba(0, 0, 0, 0.28);
   --fig-anat: rgba(0, 0, 0, 0.16);
-  --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Helvetica Neue", sans-serif;
+  --body: var(--font-body);
   --r-img: 8px;
   --r-card: 12px;
   --card-bg: var(--surface);
@@ -25,7 +25,7 @@
   color: var(--text);
 }
 @media (prefers-color-scheme: dark) {
-  .m-bo {
+  :root:not([data-theme="light"]) .m-bo {
     --faint: rgba(245, 245, 245, 0.34);
     --surface-2: #303030;
     --line-2: rgba(255, 255, 255, 0.16);
@@ -35,6 +35,15 @@
     --fig-anat: rgba(255, 255, 255, 0.14);
   }
 }
+:root[data-theme="dark"] .m-bo {
+    --faint: rgba(245, 245, 245, 0.34);
+    --surface-2: #303030;
+    --line-2: rgba(255, 255, 255, 0.16);
+    --fig-a: rgba(255, 255, 255, 0.13);
+    --fig-b: rgba(255, 255, 255, 0.04);
+    --fig-stroke: rgba(255, 255, 255, 0.22);
+    --fig-anat: rgba(255, 255, 255, 0.14);
+  }
 /* The module's page area, matching Christina's .page */
 #main > .m-bo { display: block; min-height: 100%; padding: var(--margin) var(--margin) 40px; font-size: 16px; line-height: 1.35; }
 @media (min-width: 900px) { #main > .m-bo { max-width: 760px; margin: 0 auto; } }
@@ -427,14 +436,14 @@
 /* Sub-navigation: Christina's segmented control and a small + */
 .m-bo .bo-subnav { display: flex; align-items: center; gap: var(--gap); margin-bottom: 16px; }
 .m-bo .bo-subnav .segmented { flex: 1; min-width: 0; }
-.m-bo .bo-plus { width: 40px; height: 40px; flex: none; border-radius: 50%; background: var(--text); color: var(--bg); display: grid; place-items: center; }
+.m-bo .bo-plus { width: 40px; height: 40px; flex: none; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
 
 /* Christina's type scale: 24 / 16 / 14 / 12, sentence case labels */
 .m-bo .t-title, .m-bo .t-name, .m-bo .obj-name, .m-bo .rit-name, .m-bo .run-t, .m-bo .need-q, .m-bo .ob h2 {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 24px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2;
 }
-.m-bo .brand { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; text-transform: none; }
+.m-bo .brand { font-family: var(--font-display); font-size: 24px; font-weight: 600; letter-spacing: -0.01em; text-transform: none; }
 .m-bo .sub { margin: 4px 0 0; font-size: 14px; font-weight: 400; color: var(--text2); letter-spacing: 0; }
 .m-bo .mon { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .m-bo .sec-t, .m-bo .sub-h, .m-bo .lbl, .m-bo .day-t, .m-bo .bs-t, .m-bo .ob h1 { font-size: 14px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text2); }

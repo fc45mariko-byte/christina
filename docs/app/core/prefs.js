@@ -22,6 +22,8 @@ const prefs = {
   hideInstallHint: Settings.read('hideInstallHint', false),
   tabSlots: Settings.read('tabSlots', null),
   calendarView: Settings.read('calendarView', null),
+  hiddenModules: Settings.read('hiddenModules', []),
+  showReminders: Settings.read('showReminders', true),
 };
 const firstWeekday = () => (prefs.mondayFirst ? 1 : 0);
 export { Settings, prefs, firstWeekday };

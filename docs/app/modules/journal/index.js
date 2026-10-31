@@ -63,8 +63,8 @@ function viewJournal() {
     <label class="field search-field">${icon('search')}<input type="search" data-live="journalSearch" value="${esc(state.journalQuery)}" placeholder="Search your journal" autocomplete="off" enterkeyhint="search" aria-label="Search your journal"></label>
     ${
       tags.length
-        ? `<div class="strip">${[['', 'All'], ...tags.map((t) => [t.id, t.name])]
-            .map(([id, name]) => `<button class="badge" style="background:${state.journalTag === id ? 'var(--text);color:var(--bg)' : 'var(--surface)'};font-size:14px;padding:6px 12px" data-action="journalTag" data-id="${esc(id)}">${esc(name)}</button>`)
+        ? `<div class="chip-row">${[['', 'All'], ...tags.map((t) => [t.id, t.name])]
+            .map(([id, name]) => `<button class="pill ${state.journalTag === id ? 'on' : ''}" data-action="journalTag" data-id="${esc(id)}" aria-pressed="${state.journalTag === id}">${esc(name)}</button>`)
             .join('')}</div>`
         : ''
     }

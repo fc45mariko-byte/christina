@@ -12,11 +12,20 @@
   --pad: 12px;
   --gap: 8px;
   --radius: 10px;
+  /* Appearance settings (core/appearance.js). The defaults are Christina's original look. */
+  --ui-accent: var(--text); /* set by Settings → Appearance → Accent */
+  --ui-accent-ink: var(--bg);
+  --accent: var(--ui-accent);
+  --accent-ink: var(--ui-accent-ink);
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Helvetica Neue", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
   color-scheme: light dark;
 }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #1a1a1a;
     --text: #f5f5f5;
     --text2: rgba(245, 245, 245, 0.55);
@@ -25,3 +34,35 @@
     --danger: #ff6b5e;
   }
 }
+:root[data-theme="dark"] {
+    --bg: #1a1a1a;
+    --text: #f5f5f5;
+    --text2: rgba(245, 245, 245, 0.55);
+    --surface: #262626;
+    --hair: rgba(255, 255, 255, 0.1);
+    --danger: #ff6b5e;
+  }
+
+
+/* ---------- Background tone ---------- */
+:root[data-bg="paper"] { --bg: #f8f5ef; --surface: #efeae1; }
+:root[data-bg="mist"] { --bg: #f5f7f9; --surface: #e9edf1; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-bg="paper"] { --bg: #1d1b18; --surface: #2b2824; }
+  :root:not([data-theme="light"])[data-bg="mist"] { --bg: #171a1d; --surface: #24292e; }
+}
+:root[data-theme="dark"][data-bg="paper"] { --bg: #1d1b18; --surface: #2b2824; }
+:root[data-theme="dark"][data-bg="mist"] { --bg: #171a1d; --surface: #24292e; }
+
+/* ---------- Font ---------- */
+:root[data-font="serif"] {
+  --font-body: ui-serif, "New York", Georgia, "Times New Roman", serif;
+  --font-display: ui-serif, "New York", Georgia, "Times New Roman", serif;
+}
+:root[data-font="rounded"] {
+  --font-body: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif;
+  --font-display: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif;
+}
+
+/* ---------- Density ---------- */
+:root[data-density="compact"] { --margin: 12px; --pad: 9px; --gap: 6px; }

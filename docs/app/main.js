@@ -25,6 +25,11 @@ import './modules/settings/index.js';
 import './modules/body-oracle/bo.js';
 import { importLegacyBodyOracle } from './modules/body-oracle/legacy.js';
 import { toast } from './ui/components.js';
+import { applyAppearance } from './core/appearance.js';
+import { prefs } from './core/prefs.js';
+import { dueReminders, whenText } from './modules/calendar/plans.js';
+
+applyAppearance();
 
 // Navigation shared by every screen.
 register({
@@ -71,6 +76,10 @@ async function boot() {
   }
   render();
   if (imported) toast(`Body Oracle: ${imported} ${imported === 1 ? 'entry' : 'entries'} brought in`);
+  else if (prefs.showReminders !== false) {
+    const due = dueReminders();
+    if (due.length) toast(due.length === 1 ? `Reminder: ${due[0].title}, ${whenText(due[0])}` : `${due.length} reminders on Overview`);
+  }
   WIDE.addEventListener('change', () => {
     // Widening while a section is open inside More: show it as its own sidebar section.
     const first = state.stacks.more[0];

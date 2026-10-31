@@ -31,7 +31,7 @@ function monthTiles() {
 function results() {
   const { records, threads } = search(state.archiveQuery, state.archiveKind);
   const count = records.length + threads.length;
-  return `<div class="strip">${KINDS.map(([k, l]) => `<button class="badge" style="background:${state.archiveKind === k ? 'var(--text);color:var(--bg)' : 'var(--surface)'};font-size:14px;padding:6px 12px" data-action="archiveKind" data-kind="${k}" aria-pressed="${state.archiveKind === k}">${l}</button>`).join('')}</div>
+  return `<div class="chip-row">${KINDS.map(([k, l]) => `<button class="pill ${state.archiveKind === k ? 'on' : ''}" data-action="archiveKind" data-kind="${k}" aria-pressed="${state.archiveKind === k}">${l}</button>`).join('')}</div>
     <span class="caption">${count ? `${count} ${count === 1 ? 'result' : 'results'}` : 'Nothing matches that search.'}</span>
     ${threads
       .map((t) => `<button class="card" data-action="openThread" data-id="${esc(t.id)}"><span class="dot" style="background:#${esc(t.color)}"></span><span class="row-text"><span>${esc(t.title)}</span><span class="caption">Thread · ${esc(rangeText(t.startDate, t.endDate))}</span></span></button>`)

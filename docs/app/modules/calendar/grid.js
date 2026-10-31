@@ -74,8 +74,8 @@ function calendarGrid(weeks, startDate, endDate, palette, readOnly) {
   const todayYMD = ymd(new Date());
   const sunday = new Date(2023, 0, 1); // a Sunday
   const headers = [...Array(7)].map((_, i) => F.weekday.format(addDays(sunday, (firstWeekday() + i) % 7)));
-  const todayBg = accentHex ? `#${accentHex}` : 'var(--text)';
-  const todayFg = accentHex ? (brightness(accentHex) > 0.6 ? '#000' : '#fff') : 'var(--bg)';
+  const todayBg = accentHex ? `#${accentHex}` : 'var(--accent)';
+  const todayFg = accentHex ? (brightness(accentHex) > 0.6 ? '#000' : '#fff') : 'var(--accent-ink)';
 
   const rows = weeks
     .map((days) => {
