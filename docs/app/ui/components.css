@@ -285,3 +285,28 @@ img[data-file]:not([src]) { visibility: hidden; }
 .w-big { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .w .stats .stat { background: var(--bg); }
 .wgrid > .blank.wide { grid-column: 1 / -1; }
+
+/* ---------- Insights charts: thin single-colour bars, value on hover/focus, tap opens the records ---------- */
+.vbars { display: flex; align-items: flex-end; gap: 2px; height: 120px; border-bottom: 1px solid var(--hair); padding-top: 18px; }
+.vbar { position: relative; flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; min-width: 0; }
+.vbar i { display: block; width: 100%; max-width: 22px; background: var(--text); border-radius: 4px 4px 0 0; min-height: 2px; opacity: 0.85; }
+.vbar:disabled { opacity: 1; cursor: default; }
+.vbar:disabled i { background: var(--hair); }
+.vbar b { position: absolute; top: -16px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.vbar:not(:disabled):hover i, .vbar:focus-visible i { opacity: 1; }
+.vbar[data-tip]:not(:disabled):hover::after, .vbar[data-tip]:focus-visible::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); z-index: 2;
+  background: var(--text); color: var(--bg); font-size: 12px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+}
+.vaxis { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); }
+.hbars { display: flex; flex-direction: column; gap: 6px; }
+.hbar { display: grid; grid-template-columns: minmax(0, 38%) minmax(0, 1fr) auto; align-items: center; gap: var(--gap); text-align: left; min-height: 32px; }
+.hbar-label { display: flex; align-items: center; gap: 6px; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar-track { height: 8px; background: var(--hair); border-radius: 4px; overflow: hidden; }
+.hbar-track i { display: block; height: 100%; background: var(--text); border-radius: 0 4px 4px 0; }
+.hbar-value { font-size: 14px; color: var(--text2); font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--hair); text-align: right; }
+.table th[scope="row"], .table thead th:first-child { text-align: left; font-weight: 400; color: var(--text2); }
+.table thead th { font-weight: 600; }

@@ -37,7 +37,7 @@ docs/
       journal/           Journal
       tasks/  projects/  habits/
       calendar/          grid.js, plans.js (scheduled events), index.js (Day / Week / Month)
-      (planned) insights/
+      insights/          counts, charts and "recorded together"
 ```
 
 Each module registers itself with `register({ tabs, screens, actions, changeActions, fileActions, validators })`.
@@ -74,7 +74,7 @@ Insights are computed on demand and always link to the records they were counted
 5. **One Archive and one search; Journal module.** — done
 6. **Dashboard widgets, sizes and layouts.** — done
 7. **Calendar events, Tasks, Projects, Habits.** — done (built before step 6 so the dashboard has real data)
-8. Insights.
+8. **Insights.** — done
 9. Appearance and customisation settings.
 10. Tests on phone and desktop sizes, preview deploy, cut-over.
 
@@ -295,3 +295,27 @@ backup keeps Journal entries (they were treated as Body Oracle records since ste
 Verified: default widgets with real data, acting from widgets (task, state, reminder), every customization
 (toggle, move, size, columns, presets, save / apply / delete a layout), persistence after reload, phone and desktop,
 Journal entries untouched by Body Oracle's archive and erase, no console errors.
+
+## Step 8 — what changed
+
+**Insights** (`modules/insights/`), for the last 4 weeks, 3 months or 12 months. Everything is counted from
+stored records when the page opens; nothing is guessed, and no AI is involved.
+- In this period: recorded, journal entries, tasks done, habit check-ins — each against the period before.
+- Everything recorded and journal entries, by week (or by month for 12 months).
+- Time by category (from event durations) and records by category.
+- Habits: share of days (or weekly targets) met in the period, current and longest streak.
+- How you felt (Body Oracle states) and what your body noticed (sensation and place, with average intensity).
+- Projects: progress now.
+- **Recorded together**: "On 5 of the 6 days you recorded Calm, you also recorded Walk." Only things recorded on
+  at least 3 days are compared. The page says plainly that this does not mean one caused the other, and
+  "See those days" lists the records behind it.
+- Month by month: a table of the last three months.
+- **Every bar opens the records it was counted from.** Values show on hover or focus.
+- An Insights widget for Overview (headline numbers and the strongest "recorded together").
+
+Charts are single-colour bars in Christina's ink; categories and states are labelled rows, so nothing depends on
+colour alone.
+
+Verified with four weeks of seeded records: totals match the seeded counts, time by category, the planted
+"recorded together" pattern is found and worded without cause, a bar opens exactly its records, period switching,
+the Overview widget, light and dark, no console errors.

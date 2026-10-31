@@ -20,6 +20,7 @@ import './modules/journal/index.js';
 import './modules/tasks/index.js';
 import './modules/projects/index.js';
 import './modules/habits/index.js';
+import './modules/insights/index.js';
 import './modules/settings/index.js';
 import './modules/body-oracle/bo.js';
 import { importLegacyBodyOracle } from './modules/body-oracle/legacy.js';
