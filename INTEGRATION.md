@@ -28,6 +28,7 @@ docs/
       db.js              IndexedDB
       prefs.js           per-device preferences
       queries.js  catalog.js  util.js  validation.js
+    shell/               nav.js (tab bar, sidebar, slots), more.js (More, Settings → Tab bar)
     services/            media.js (photos), backup.js (export)
     ui/                  tokens.css, base.css, components.css, components.js, icons.js
     modules/
@@ -64,7 +65,7 @@ Insights are computed on demand and always link to the records they were counted
 
 1. **Split Christina into modules with no change in behaviour; add export.** — done
 2. **Database v2 and migration of existing data (old data kept in `legacy`).** — done
-3. Shell: tab bar (Overview · Calendar · + · Journal · More, four slots user-chosen), More screen, desktop sidebar, + sheet.
+3. **Shell: tab bar with four user-chosen slots + More, More screen, desktop sidebar.** — done (the + sheet comes with the modules that add to it)
 4. Port Body Oracle as a module, restyled; import from its backup file.
 5. One Archive and one search; Journal module.
 6. Dashboard widgets, sizes and layouts.
@@ -121,3 +122,23 @@ Verified:
   a personalized month), then the new code loaded at the same address: 11 screens identical before and after,
   every field carried over, `legacy` holds the originals, a second reload changes nothing, no console errors.
 - Export: backup contains every store and the photo; the CSV reads the new records.
+
+## Step 3 — what changed
+
+- **Tab bar (phone):** `[slot 1] [slot 2] [+] [slot 3] [slot 4] [More]`, the same six positions as before.
+  Default slots: Overview, Calendar, Threads, Archive. Home is now labelled **Overview** and Map **Calendar**.
+  Settings moved into More. Journal joins the defaults when the Journal module exists (no empty tabs before that).
+- **More:** lists every section not in the tab bar, plus **Tab bar** settings. A section opened from More shows its
+  usual page with a Back button; the More button stays highlighted.
+- **Settings → Tab bar** (also in More): pick the module for each of the four slots. Picking one that is already in
+  another slot swaps them. Saved per device (`christina.tabSlots`).
+- **Wide screens (≥ 900px):** a sidebar with every section and an Add button replaces the tab bar; pages are centred
+  at up to 760px wide. Widening the window while a section is open inside More moves it to its sidebar entry.
+- After saving, Add returns to Overview or Calendar as before; if that section has no slot, it opens inside More.
+- Modules declare their place with `register({ nav: { id, label, icon, order } })`.
+- Service worker cache bumped to `christina-v5`.
+
+Verified: at desktop width the 45-step side-by-side session renders the same page content as the original at every
+step except the new "Tab bar" row in Settings; the v1 → v2 upgrade test still shows 11 identical screens; phone flows
+(More, opening and leaving sections, changing and swapping slots, reload, saving into an unpinned section, resizing
+between phone and desktop, dark mode) work with no console errors.

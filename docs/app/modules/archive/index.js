@@ -26,6 +26,7 @@ function viewArchiveMonth(key) {
   </div>`;
 }
 register({
+  nav: { id: 'archive', label: 'Archive', icon: 'archive', order: 4 },
   tabs: { archive: viewArchive },
   screens: { archiveMonth: (view) => viewArchiveMonth(view.month) },
   actions: {

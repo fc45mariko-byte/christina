@@ -13,6 +13,7 @@ function viewSettings() {
   return `<div class="page"><h1>Settings</h1>
     <div class="settings-list">
       ${settingsRow('Appearance', 'palette', 'openAppearance')}
+      ${settingsRow('Tab bar', 'grid', 'openNavigation')}
       ${settingsRow('Calendar &amp; Time', 'calendar', 'openCalendarSettings')}
       ${settingsRow('Categories', 'grid', 'openCategories')}
       ${settingsRow('Data &amp; Export', 'drive', 'openData')}
@@ -104,6 +105,7 @@ async function runExport(work, label) {
 }
 
 register({
+  nav: { id: 'settings', label: 'Settings', icon: 'settings', order: 90 },
   tabs: { settings: viewSettings },
   screens: {
     appearance: () => viewAppearance(),

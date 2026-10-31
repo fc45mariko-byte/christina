@@ -23,6 +23,37 @@
 }
 .tab-add svg { width: 26px; height: 26px; stroke-width: 2.5; }
 
+/* ---------- Sidebar (wide screens) ---------- */
+#sidebar { display: none; }
+@media (min-width: 900px) {
+  #app { display: grid; grid-template-columns: 232px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  #tabbar { display: none; }
+  #sidebar {
+    display: flex; flex-direction: column; gap: var(--gap); overflow-y: auto;
+    padding: calc(var(--margin) + env(safe-area-inset-top)) 12px var(--margin) max(12px, env(safe-area-inset-left));
+    border-right: 1px solid var(--hair);
+  }
+  #main { padding-left: 0; }
+  #main .page { width: 100%; max-width: 760px; margin: 0 auto; }
+}
+.side-brand {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  font-size: 24px; font-weight: 600; letter-spacing: -0.01em; padding: 4px 8px 12px;
+}
+.side-add {
+  display: flex; align-items: center; gap: var(--gap); min-height: 44px; padding: 0 12px; margin-bottom: 8px;
+  border-radius: 12px; background: var(--text); color: var(--bg); font-weight: 600; font-size: 16px;
+}
+.side-add svg { width: 20px; height: 20px; stroke-width: 2.5; }
+.side-list { display: flex; flex-direction: column; gap: 2px; }
+.side-item {
+  display: flex; align-items: center; gap: var(--pad); min-height: 40px; padding: 0 12px;
+  border-radius: var(--radius); color: var(--text2); font-size: 16px; text-align: left;
+}
+.side-item svg { width: 20px; height: 20px; flex: none; }
+.side-item.active { background: var(--surface); color: var(--text); font-weight: 600; }
+.side-add.active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
+
 /* ---------- Nav bar for pushed screens ---------- */
 .navbar {
   position: sticky; top: 0; z-index: 5;

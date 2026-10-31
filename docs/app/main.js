@@ -6,6 +6,8 @@ import { state, back } from './core/state.js';
 import { register } from './core/registry.js';
 import { render } from './core/render.js';
 import { bindEvents } from './core/events.js';
+import { renderNav, WIDE } from './shell/nav.js';
+import './shell/more.js';
 
 // Modules register their own tabs, screens and actions.
 import './modules/overview/index.js';
@@ -16,8 +18,9 @@ import './modules/threads/index.js';
 import './modules/archive/index.js';
 import './modules/settings/index.js';
 
-// Navigation actions shared by every screen.
+// Navigation shared by every screen.
 register({
+  chrome: renderNav,
   actions: {
     tab(el) {
       const tab = el.dataset.tab;
@@ -47,6 +50,16 @@ async function boot() {
     return;
   }
   render();
+  WIDE.addEventListener('change', () => {
+    // Widening while a section is open inside More: show it as its own sidebar section.
+    const first = state.stacks.more[0];
+    if (WIDE.matches && state.tab === 'more' && first && first.name === 'module') {
+      state.tab = first.id;
+      state.stacks[first.id] = state.stacks.more.slice(1);
+      state.stacks.more = [];
+    }
+    render();
+  });
 }
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

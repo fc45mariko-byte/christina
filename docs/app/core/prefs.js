@@ -20,6 +20,7 @@ const prefs = {
   mondayFirst: Settings.read('mondayFirst', true),
   weekView: Settings.read('weekView', false),
   hideInstallHint: Settings.read('hideInstallHint', false),
+  tabSlots: Settings.read('tabSlots', null),
 };
 const firstWeekday = () => (prefs.mondayFirst ? 1 : 0);
 export { Settings, prefs, firstWeekday };

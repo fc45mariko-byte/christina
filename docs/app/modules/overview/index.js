@@ -31,6 +31,7 @@ function viewHome() {
   </div>`;
 }
 register({
+  nav: { id: 'home', label: 'Overview', icon: 'home', order: 1 },
   tabs: { home: viewHome },
   actions: {
     hideHint() {

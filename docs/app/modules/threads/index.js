@@ -173,6 +173,7 @@ const actions = {
 };
 
 register({
+  nav: { id: 'threads', label: 'Threads', icon: 'threads', order: 3 },
   screens: {
     thread: (view) => viewThreadDetail(view.id),
     threadEdit: () => viewThreadEdit(),

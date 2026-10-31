@@ -32,6 +32,7 @@ function viewMap() {
   </div>`;
 }
 register({
+  nav: { id: 'map', label: 'Calendar', icon: 'calendar', order: 2 },
   tabs: { map: viewMap },
   actions: {
     mapStep(el) {

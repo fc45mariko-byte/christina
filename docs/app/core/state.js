@@ -2,7 +2,7 @@
 import { currentMonth, ymd, localInputValue } from './util.js';
 import { THREAD_COLORS } from './catalog.js';
 import { render } from './render.js';
-const TABS = ['home', 'map', 'add', 'threads', 'archive', 'settings'];
+const TABS = ['home', 'map', 'add', 'threads', 'archive', 'settings', 'more'];
 const state = {
   tab: 'home',
   stacks: Object.fromEntries(TABS.map((t) => [t, []])),

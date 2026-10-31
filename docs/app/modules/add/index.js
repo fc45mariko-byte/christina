@@ -4,6 +4,7 @@ import { DB, data, blobRecord, requestPersistence } from '../../core/db.js';
 import { threadById, recordMonth } from '../../core/queries.js';
 import { state, newEventForm, newThreadForm } from '../../core/state.js';
 import { render } from '../../core/render.js';
+import { openModule } from '../../shell/nav.js';
 import { register, registry } from '../../core/registry.js';
 import { icon } from '../../ui/icons.js';
 import { chips, swatches, toast, fail } from '../../ui/components.js';
@@ -130,8 +131,7 @@ async function saveEvent() {
   if (f.photoURL) URL.revokeObjectURL(f.photoURL);
   state.ef = newEventForm();
   toast(`Saved to ${monthTitle(recordMonth(event))}`);
-  state.tab = 'home';
-  state.stacks.home = [];
+  openModule('home');
   render();
 }
 
@@ -165,8 +165,7 @@ async function saveThread(skipDuplicateCheck = false) {
   state.tf = newThreadForm();
   state.addMode = 'did'; // Add opens in its default mode next time
   toast('Thread saved');
-  state.tab = 'map';
-  state.stacks.map = [];
+  openModule('map');
   state.mapMonth = thread.startDate.slice(0, 7);
   state.weekAnchor = thread.startDate;
   render();
