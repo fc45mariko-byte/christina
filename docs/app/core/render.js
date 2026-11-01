@@ -42,5 +42,10 @@ function hydrateImages(root) {
       })
       .catch(() => holder && holder.classList.remove('loading'));
   });
+  // Videos (kept from the former Body Oracle app): <video data-file="media/<id>~v">.
+  root.querySelectorAll('video[data-file]').forEach((v) => {
+    if (v.dataset.poster) fileURL(v.dataset.poster).then((url) => url && (v.poster = url)).catch(() => {});
+    fileURL(v.dataset.file).then((url) => url && (v.src = url)).catch(() => {});
+  });
 }
 export { render, hydrateImages };

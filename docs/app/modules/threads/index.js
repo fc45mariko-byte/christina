@@ -14,7 +14,7 @@ function relevanceSorted(list) {
     const ra = rank(a);
     const rb = rank(b);
     if (ra !== rb) return ra - rb;
-    // Threads without dates (from Body Oracle) count as ongoing and sort after dated ones.
+    // Threads without dates count as ongoing and sort after dated ones.
     if (ra === 0) return (b.startDate || '').localeCompare(a.startDate || '');
     if (ra === 1) return a.startDate.localeCompare(b.startDate);
     return (b.endDate || '').localeCompare(a.endDate || '');
@@ -211,7 +211,7 @@ register({
   validators: {
   threadEdit() {
     const f = state.te;
-    // A thread that came without dates or a category (from Body Oracle) can stay that way.
+    // A thread without dates or a category can stay that way.
     return !!f && f.title.trim() !== '' && (!!f.categoryId || !f.hadCategory) && (!f.start || f.ongoing || (!!f.end && f.end >= f.start));
   },
   },

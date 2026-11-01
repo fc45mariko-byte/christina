@@ -1,6 +1,6 @@
-/* Journal: a private place to write. Entries are records of kind 'journal':
+/* Journal: a private place to write — entries, dreams and signs. Records of kind 'journal', 'dream' or 'sign':
  * { occurredAt, title (optional), text, categoryIds, threadIds, tagIds, linkedRecordIds, … }.
- * The Journal stands on its own; an entry can optionally link to other records (Body Oracle observations,
+ * The Journal stands on its own; an entry can optionally link to other records (rituals done, states,
  * Christina events), which then show the link from their side too. Past months are read-only. */
 import { esc, uuid, localInputValue, F, timestamp, monthTitle, rangeText, $ } from '../../core/util.js';
 import { DB, data, requestPersistence } from '../../core/db.js';
@@ -13,15 +13,23 @@ import { register, registry } from '../../core/registry.js';
 import { icon } from '../../ui/icons.js';
 import { navbar, badge, chips, recordRow, toast, fail } from '../../ui/components.js';
 import { openModule } from '../../shell/nav.js';
+import { mediaHTML, addDraftImage, commitDraftImages } from '../../ui/media.js';
 import { search } from '../../services/search.js';
 
 state.journalQuery = '';
 state.journalTag = '';
 state.jf = null; // journal form
+state.journalType = 'all';
 
 const KIND = 'journal';
+/** Writing kinds, all kept in the Journal. */
+const TYPES = [['journal', 'Entry'], ['dream', 'Dream'], ['sign', 'Sign']];
+const WRITING = new Set(TYPES.map(([k]) => k));
+const typeLabel = (k) => (TYPES.find(([x]) => x === k) || TYPES[0])[1];
+const MAX_PHOTOS = 10;
+const rawId = (key) => String(key).replace(/^media\//, '');
 const lower = (s) => String(s || '').trim().toLowerCase();
-const journalEntries = () => data.records.filter((r) => r.kind === KIND && !r.archived).sort(newestFirst);
+const journalEntries = () => data.records.filter((r) => WRITING.has(r.kind) && !r.archived).sort(newestFirst);
 const isLocked = (r) => isPastMonth(recordMonth(r));
 /** Records that link to this one (shown on the other record's side). */
 const linkedFrom = (id) => data.records.filter((r) => (r.linkedRecordIds || []).includes(id));
@@ -44,6 +52,7 @@ function entryRows(list) {
 
 function listBody() {
   let list = journalEntries();
+  if (state.journalType !== 'all') list = list.filter((r) => r.kind === state.journalType);
   if (state.journalTag) list = list.filter((r) => (r.tagIds || []).includes(state.journalTag));
   if (state.journalQuery.trim()) {
     const ids = new Set(search(state.journalQuery, KIND).records.map((r) => r.id));
@@ -60,6 +69,7 @@ function viewJournal() {
   if (state.journalTag && !used.has(state.journalTag)) state.journalTag = '';
   return `<div class="page tight">
     <div class="row-field"><h1>Journal</h1><button class="nav-btn strong" data-action="newJournal">${icon('plus')}New</button></div>
+    <div class="chip-row">${[['all', 'All'], ['journal', 'Entries'], ['dream', 'Dreams'], ['sign', 'Signs']].map(([k, l]) => `<button class="pill ${state.journalType === k ? 'on' : ''}" data-action="journalType" data-t="${k}" aria-pressed="${state.journalType === k}">${l}</button>`).join('')}</div>
     <label class="field search-field">${icon('search')}<input type="search" data-live="journalSearch" value="${esc(state.journalQuery)}" placeholder="Search your journal" autocomplete="off" enterkeyhint="search" aria-label="Search your journal"></label>
     ${
       tags.length
@@ -83,9 +93,12 @@ function viewEntry(id) {
   const tags = (r.tagIds || []).map(tagById).filter(Boolean);
   const linked = (r.linkedRecordIds || []).map(recordById).filter(Boolean);
   const from = linkedFrom(r.id);
+  const theme = (r.themeIds || []).map((id) => (data.themes || []).find((t) => t.id === id)).filter(Boolean)[0];
+  const photos = (r.mediaIds || []).map(rawId);
   return `${navbar('', locked ? '<span class="caption" style="padding:0 8px">Archived</span>' : `<button class="nav-btn" data-action="editJournal" data-id="${esc(r.id)}">Edit</button>`)}
   <div class="page">
-    <div class="row-field" style="justify-content:flex-start;gap:8px">${categoryId ? badge(categoryId) : ''}<span class="caption">${esc(F.full.format(new Date(r.occurredAt)))}</span></div>
+    <div class="row-field" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"><span class="label">${esc(typeLabel(r.kind))}</span>${categoryId ? badge(categoryId) : ''}<span class="caption">${esc(F.full.format(new Date(r.occurredAt)))}</span></div>
+    ${photos.length ? `<div class="img-grid">${photos.map((id) => `<div class="sq">${mediaHTML(id, null, { controls: true })}</div>`).join('')}</div>` : ''}
     ${r.title ? `<h1>${esc(r.title)}</h1>` : ''}
     <div style="white-space:pre-wrap;font-size:17px;line-height:1.5">${esc(r.text || '')}</div>
     ${tags.length ? `<div class="row-field" style="justify-content:flex-start;flex-wrap:wrap">${tags.map((t) => `<span class="badge" style="background:var(--surface);font-size:14px">${esc(t.name)}</span>`).join('')}</div>` : ''}
@@ -94,6 +107,7 @@ function viewEntry(id) {
         ? `<div class="section"><span class="label">Thread</span><button class="card" data-action="openThread" data-id="${esc(thread.id)}"><span class="dot" style="background:#${esc(thread.color)}"></span><span class="row-text"><span>${esc(thread.title)}</span><span class="caption">${esc(rangeText(thread.startDate, thread.endDate))}</span></span>${icon('right', 'chev')}</button></div>`
         : ''
     }
+    ${theme ? `<div class="section"><span class="label">Theme</span><button class="pill" style="align-self:flex-start" data-action="openTheme" data-id="${esc(theme.id)}"><span class="dot" style="background:#${esc(theme.color)};width:8px;height:8px"></span>${esc(theme.name)}</button></div>` : ''}
     ${linked.length ? `<div class="section"><span class="label">Linked</span><div class="list">${linked.map((x) => recordRow(x, isLocked(x))).join('')}</div></div>` : ''}
     ${from.length ? `<div class="section"><span class="label">Linked from</span><div class="list">${from.map((x) => recordRow(x, isLocked(x))).join('')}</div></div>` : ''}
     ${locked ? '' : `<button class="btn-secondary danger" data-action="deleteJournal" data-id="${esc(r.id)}" style="margin-top:8px">Delete</button>`}
@@ -102,9 +116,12 @@ function viewEntry(id) {
 
 // ------------------------------------------------------------ editor
 
-function newForm(r) {
+function newForm(r, preset = {}) {
   return {
     id: r ? r.id : null,
+    kind: r ? r.kind : preset.kind || 'journal',
+    themeId: r ? (r.themeIds || [])[0] || '' : preset.themeId || '',
+    photos: r ? (r.mediaIds || []).map(rawId) : [],
     date: localInputValue(r ? new Date(r.occurredAt) : new Date()),
     title: r ? r.title || '' : '',
     text: r ? r.text || '' : '',
@@ -121,8 +138,10 @@ function viewEdit() {
   if (!f) return `${navbar('')}<div class="page"><div class="blank">Nothing to edit.</div></div>`;
   const threads = data.threads.filter((t) => !t.archived).sort((a, b) => a.title.localeCompare(b.title));
   const linked = f.linked.map(recordById).filter(Boolean);
-  return `${navbar(f.id ? 'Edit entry' : 'New entry', '<button class="nav-btn strong" data-action="saveJournal" data-valid="journal">Save</button>')}
+  const themes = [...(data.themes || [])].sort((a, b) => a.name.localeCompare(b.name));
+  return `${navbar(f.id ? `Edit ${typeLabel(f.kind).toLowerCase()}` : `New ${typeLabel(f.kind).toLowerCase()}`, '<button class="nav-btn strong" data-action="saveJournal" data-valid="journal">Save</button>')}
   <div class="page">
+    <div class="segmented">${TYPES.map(([k, l]) => `<button class="${f.kind === k ? 'on' : ''}" data-action="journalFormType" data-t="${k}">${l}</button>`).join('')}</div>
     <div class="section"><span class="label">When</span>
       <input class="field" type="datetime-local" data-bind="jf.date" value="${esc(f.date)}" max="${esc(localInputValue(new Date()))}">
     </div>
@@ -132,7 +151,11 @@ function viewEdit() {
     <div class="section"><span class="label">Entry</span>
       <textarea class="field" data-bind="jf.text" style="min-height:220px" placeholder="What happened, what you think about it">${esc(f.text)}</textarea>
     </div>
+    <div class="section"><span class="label">Photos (optional)</span>
+      <div class="img-grid">${f.photos.map((id, i) => `<div class="sq">${mediaHTML(id, f._blobs)}<button class="remove-x" data-action="removeJournalPhoto" data-i="${i}" aria-label="Remove photo">${icon('x')}</button></div>`).join('')}${f.photos.length < MAX_PHOTOS ? `<label class="sq add-tile" aria-label="Add photos">${icon('plus')}<input type="file" accept="image/*" multiple data-file-input="journalPhotos"></label>` : ''}</div>
+    </div>
     <div class="section"><span class="label">Category (optional — tap again to clear)</span>${chips('jf', f.categoryId)}</div>
+    ${themes.length ? `<div class="section"><span class="label">Theme (optional)</span><select class="field" data-bind="jf.themeId"><option value="">None</option>${themes.map((t) => `<option value="${esc(t.id)}" ${f.themeId === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>` : ''}
     <div class="section"><span class="label">Tags (optional, separated by commas)</span>
       <input class="field" type="text" data-bind="jf.tags" value="${esc(f.tags)}" placeholder="e.g. family, berlin" autocomplete="off">
     </div>
@@ -144,7 +167,7 @@ function viewEdit() {
     </div>
     <div class="section"><span class="label">Linked records (optional)</span>
       ${linked.length ? `<div class="list">${linked.map((x) => `<div class="row-field">${recordRow(x, true)}<button class="arrow" data-action="unlinkJournal" data-id="${esc(x.id)}" aria-label="Remove link">${icon('x')}</button></div>`).join('')}</div>` : ''}
-      <button class="btn-secondary" data-action="openJournalLink">${icon('link')} Link an observation or event</button>
+      <button class="btn-secondary" data-action="openJournalLink">${icon('link')} Link a record</button>
     </div>
   </div>`;
 }
@@ -155,7 +178,7 @@ function viewLink() {
   if (!f) return `${navbar('')}<div class="page"></div>`;
   const since = Date.now() - LINKABLE_DAYS * 864e5;
   const list = data.records
-    .filter((r) => r.kind !== KIND && r.id !== f.id && !r.archived && (new Date(r.occurredAt).getTime() >= since || f.linked.includes(r.id)))
+    .filter((r) => !WRITING.has(r.kind) && r.id !== f.id && !r.archived && (new Date(r.occurredAt).getTime() >= since || f.linked.includes(r.id)))
     .sort(newestFirst);
   return `${navbar('Link records', '<button class="nav-btn strong" data-action="back">Done</button>')}
   <div class="page tight">
@@ -204,17 +227,19 @@ async function saveJournal() {
   const existing = f.id ? recordById(f.id) : null;
   if (existing && isLocked(existing)) return;
   const { ids: tagIds, created } = resolveTags(f.tags, now);
+  const beforePhotos = existing ? (existing.mediaIds || []).map(rawId) : [];
   const record = {
     ...(existing || {}),
     id: existing ? existing.id : uuid(),
-    kind: KIND,
+    kind: f.kind,
     occurredAt: new Date(f.date).toISOString(),
     title: f.title.trim() || null,
-    text: f.text.trim(),
+    text: f.text.trim() || null,
     categoryIds: f.categoryId ? [f.categoryId] : [],
     threadIds: f.threadId && threadById(f.threadId) ? [f.threadId] : [],
     tagIds,
-    mediaIds: existing ? existing.mediaIds || [] : [],
+    mediaIds: f.photos.map((id) => `media/${id}`),
+    themeIds: f.themeId ? [f.themeId] : [],
     linkedRecordIds: f.linked.filter((id) => recordById(id)),
     payload: existing ? existing.payload || {} : {},
     archived: false,
@@ -222,6 +247,7 @@ async function saveJournal() {
     updatedAt: now,
   };
   try {
+    await commitDraftImages(f, f.photos, beforePhotos);
     await DB.write(['records', 'tags'], (tx) => {
       created.forEach((t) => tx.objectStore('tags').put(t));
       tx.objectStore('records').put(record);
@@ -263,16 +289,33 @@ function openEntry(r) {
 register({
   nav: { id: KIND, label: 'Journal', icon: 'journal', order: 2.5 },
   tabs: { journal: viewJournal },
-  kinds: { journal: { label: 'Journal', icon: 'journal', open: openEntry } },
+  kinds: {
+    journal: { label: 'Journal', icon: 'journal', open: openEntry },
+    dream: { label: 'Dream', icon: 'dream', open: openEntry },
+    sign: { label: 'Sign', icon: 'sign', open: openEntry },
+  },
   screens: {
     journalEntry: (view) => viewEntry(view.id),
     journalEdit: () => viewEdit(),
     journalLink: () => viewLink(),
   },
+  fileActions: {
+    async journalPhotos(files) {
+      const f = state.jf;
+      for (const file of [...files].slice(0, MAX_PHOTOS - f.photos.length)) {
+        try {
+          f.photos.push(await addDraftImage(f, file));
+        } catch (error) {
+          alert(`Photo problem. ${error.message}`);
+        }
+      }
+      render();
+    },
+  },
   validators: {
     journal() {
       const f = state.jf;
-      return !!f && f.text.trim() !== '' && !!f.date && new Date(f.date).getTime() <= Date.now() + 60000;
+      return !!f && (f.text.trim() !== '' || f.photos.length > 0) && !!f.date && new Date(f.date).getTime() <= Date.now() + 60000;
     },
   },
   liveInputs: {
@@ -285,8 +328,8 @@ register({
     },
   },
   actions: {
-    newJournal() {
-      state.jf = newForm(null);
+    newJournal(el) {
+      state.jf = newForm(null, { kind: (el && el.dataset.kind) || 'journal', themeId: (el && el.dataset.theme) || '' });
       push({ name: 'journalEdit' });
     },
     editJournal(el) {
@@ -297,6 +340,18 @@ register({
     },
     saveJournal: () => saveJournal(),
     deleteJournal: (el) => deleteJournal(el.dataset.id),
+    journalType(el) {
+      state.journalType = el.dataset.t;
+      render();
+    },
+    journalFormType(el) {
+      state.jf.kind = el.dataset.t;
+      render();
+    },
+    removeJournalPhoto(el) {
+      state.jf.photos.splice(Number(el.dataset.i), 1);
+      render();
+    },
     journalTag(el) {
       state.journalTag = el.dataset.id;
       render();

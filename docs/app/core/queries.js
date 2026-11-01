@@ -6,8 +6,10 @@ import { OTHER_CATEGORY_ID } from './catalog.js';
 // ------------------------------------------------------------ Records
 
 const recordById = (id) => data.records.find((r) => r.id === id);
-/** Christina's "I did something" events. Other kinds come from Journal and Body Oracle. */
+/** Christina's "I did something" events. */
 const isActivity = (r) => r.kind === 'activity';
+/** Journal entries, dreams and signs: what you wrote. */
+const isWriting = (r) => r.kind === 'journal' || r.kind === 'dream' || r.kind === 'sign';
 const firstLine = (s) => String(s || '').trim().split('\n')[0].slice(0, 120);
 /** The line a record is listed under: its title, else the first line of its text, else its kind. */
 const recordTitle = (r, kindLabel = '') => (r.title && String(r.title).trim()) || firstLine(r.text) || kindLabel || 'Record';
@@ -47,7 +49,7 @@ function categoryHex(id, palette) {
   if (!palette || !palette.length) return categoryById(id).color;
   return palette[categoryIndex(id) % palette.length];
 }
-/** A record's colour: its category's; for a record without a category, its own colour (Body Oracle), else grey. */
+/** A record's colour: its category's; for a record without a category, its own colour (kept from older records), else grey. */
 function recordHex(r, palette) {
   if (r.categoryIds && r.categoryIds[0]) return categoryHex(r.categoryIds[0], palette);
   const own = r.payload && typeof r.payload.color === 'string' ? r.payload.color.replace('#', '') : '';
@@ -86,7 +88,7 @@ function monthsWithContent() {
 }
 
 export {
-  isActivity, recordTitle, recordHex, tagById, recordById, recordMonth, isPastMonth, recordCategoryId, recordThreadId, recordPhoto, recordDuration, recordsBetween,
+  isActivity, isWriting, recordTitle, recordHex, tagById, recordById, recordMonth, isPastMonth, recordCategoryId, recordThreadId, recordPhoto, recordDuration, recordsBetween,
   newestFirst, categoryById, categoryHex, threadById, threadsOverlapping, threadHex, lookFor, lookIsEmpty, monthImageKey,
   monthsWithContent,
 };

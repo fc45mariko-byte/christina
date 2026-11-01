@@ -3,7 +3,7 @@
  * "Recorded together" says how often two things appeared on the same days; it never says one causes the other. */
 import { esc, ymd, parseYMD, addDays, F, monthKeyOf, monthStart, addMonths, monthShort, currentMonth } from '../../core/util.js';
 import { data } from '../../core/db.js';
-import { categoryById, recordTitle, newestFirst, isPastMonth, recordMonth } from '../../core/queries.js';
+import { isWriting, categoryById, recordTitle, newestFirst, isPastMonth, recordMonth } from '../../core/queries.js';
 import { state, push } from '../../core/state.js';
 import { render } from '../../core/render.js';
 import { register, registry } from '../../core/registry.js';
@@ -12,7 +12,6 @@ import { navbar, recordRow } from '../../ui/components.js';
 import { weekStartOf } from '../calendar/grid.js';
 import { activeHabits, habitStats, daysOf } from '../habits/index.js';
 import { progress } from '../projects/index.js';
-import { isBodyOracleRecord } from '../body-oracle/store.js';
 
 const PERIODS = { w4: { label: '4 weeks', weeks: 4 }, m3: { label: '3 months', weeks: 13 }, y1: { label: '12 months', months: 12 } };
 state.insightPeriod = 'w4';
@@ -84,8 +83,8 @@ const remember = (name, rows) => (OPEN[name] = rows.map((r) => ({ title: r.title
 
 function summary(B) {
   const count = (a, b) => ({
-    recorded: periodRecords(a, b).filter((r) => r.kind !== 'journal').length,
-    journal: periodRecords(a, b).filter((r) => r.kind === 'journal').length,
+    recorded: periodRecords(a, b).filter((r) => !isWriting(r)).length,
+    journal: periodRecords(a, b).filter(isWriting).length,
     tasks: data.tasks.filter((t) => t.done && t.completedAt && inRange(t.completedAt, a, b)).length,
     checkins: data.habitLogs.filter((l) => dayInRange(l.date, a, b)).length,
   });
@@ -179,22 +178,19 @@ function statesSection(B) {
   return barList(rows, 'states');
 }
 
-function bodySection(B) {
-  const rs = periodRecords(B.from, B.to).filter((r) => r.kind === 'body' && r.payload && r.payload.body);
-  if (!rs.length) return '<span class="muted">No body observations in this period.</span>';
+function ritualsSection(B) {
+  const done = periodRecords(B.from, B.to).filter((r) => r.kind === 'ritual');
   const totals = new Map();
-  for (const r of rs) {
-    const b = r.payload.body;
-    const key = `${b.sensation || 'Noticed'}${b.region ? ` · ${b.side ? `${b.side} ` : ''}${b.region.toLowerCase()}` : ''}`;
-    const t = totals.get(key) || { value: 0, ids: [], intensity: [] };
+  for (const r of done) {
+    const id = (r.payload && r.payload.ritualId) || r.title;
+    const t = totals.get(id) || { value: 0, ids: [], label: r.title || 'Ritual' };
     t.value++;
     t.ids.push(r.id);
-    if (b.intensity) t.intensity.push(b.intensity);
-    totals.set(key, t);
+    totals.set(id, t);
   }
-  const rows = [...totals].map(([label, t]) => ({ label, value: t.value, ids: t.ids, avg: t.intensity.length ? t.intensity.reduce((a, b) => a + b, 0) / t.intensity.length : null })).sort((a, b) => b.value - a.value).slice(0, 8);
-  remember('body', rows);
-  return `${barList(rows, 'body', (v) => `${v}×`)}<span class="caption">${rows.filter((r) => r.avg).map((r) => `${esc(r.label)}: average intensity ${r.avg.toFixed(1)} of 5`).slice(0, 3).join(' · ')}</span>`;
+  const rows = [...totals.values()].sort((a, b) => b.value - a.value);
+  remember('rituals', rows);
+  return rows.length ? barList(rows, 'rituals', (v) => `${v}×`) : '<span class="muted">No rituals done in this period.</span>';
 }
 
 function projectsSection() {
@@ -212,7 +208,7 @@ function projectsSection() {
 
 // ------------------------------------------------------------ recorded together
 
-/** For each day in the period, the things recorded that day: categories, Body Oracle states, habits checked in. */
+/** For each day in the period, the things recorded that day: categories, states, habits checked in, rituals done. */
 function dayTokens(B) {
   const byDay = new Map();
   const add = (day, key, label, id) => {
@@ -224,6 +220,7 @@ function dayTokens(B) {
   for (const r of periodRecords(B.from, B.to)) {
     const day = ymd(new Date(r.occurredAt));
     for (const id of r.categoryIds || []) add(day, `c:${id}`, categoryById(id).name, r.id);
+    if (r.kind === 'ritual' && r.payload && r.payload.ritualId) add(day, `r:${r.payload.ritualId}`, `${r.title || 'a ritual'} (ritual)`, r.id);
     for (const id of (r.payload && r.payload.stateIds) || []) {
       const s = data.states.find((x) => x.id === id);
       if (s) add(day, `s:${id}`, s.name, r.id);
@@ -281,9 +278,10 @@ function togetherSection(B) {
 function monthTable() {
   const months = [0, 1, 2].map((i) => addMonths(currentMonth(), -i));
   const rows = [
-    ['Recorded', (a, b) => periodRecords(a, b).filter((r) => r.kind !== 'journal').length],
-    ['Journal entries', (a, b) => periodRecords(a, b).filter((r) => r.kind === 'journal').length],
-    ['Body Oracle', (a, b) => periodRecords(a, b).filter(isBodyOracleRecord).length],
+    ['Recorded', (a, b) => periodRecords(a, b).filter((r) => !isWriting(r)).length],
+    ['Journal entries', (a, b) => periodRecords(a, b).filter(isWriting).length],
+    ['Rituals done', (a, b) => periodRecords(a, b).filter((r) => r.kind === 'ritual').length],
+    ['States logged', (a, b) => periodRecords(a, b).filter((r) => r.kind === 'state').length],
     ['Tasks done', (a, b) => data.tasks.filter((t) => t.done && t.completedAt && inRange(t.completedAt, a, b)).length],
     ['Habit check-ins', (a, b) => data.habitLogs.filter((l) => dayInRange(l.date, a, b)).length],
     ['Plans', (a, b) => data.schedule.filter((p) => dayInRange(p.date, a, b)).length],
@@ -308,13 +306,13 @@ function viewInsights() {
     <div class="chip-row">${Object.entries(PERIODS).map(([k, p]) => `<button class="pill ${state.insightPeriod === k ? 'on' : ''}" data-action="insightPeriod" data-p="${k}">${p.label}</button>`).join('')}</div>
     <span class="caption">${esc(F.dayMonth.format(B.from))} – ${esc(F.dayMonth.format(addDays(B.to, -1)))} · counted from what is stored on this device. Tap a bar to see its records.</span>
     ${card('In this period', summary(B))}
-    ${card('Everything recorded', perBucket(B, (r) => r.kind !== 'journal', 'recorded', ['record', 'records']), unitLabel)}
-    ${card('Journal entries', perBucket(B, (r) => r.kind === 'journal', 'journal', ['entry', 'entries']), unitLabel)}
+    ${card('Everything recorded', perBucket(B, (r) => !isWriting(r), 'recorded', ['record', 'records']), unitLabel)}
+    ${card('Journal entries', perBucket(B, isWriting, 'journal', ['entry', 'entries']), unitLabel)}
     ${card('Time by category', timeByCategory(B), 'from event durations')}
     ${card('Records by category', byCategory(B))}
     ${card('Habits', habitsSection(B))}
-    ${card('How you felt', statesSection(B), 'Body Oracle states')}
-    ${card('What your body noticed', bodySection(B), 'Body Oracle')}
+    ${card('How you felt', statesSection(B), 'states logged')}
+    ${card('Rituals done', ritualsSection(B))}
     ${card('Projects', projectsSection(), 'now')}
     ${card('Recorded together', togetherSection(B))}
     ${card('Month by month', monthTable())}

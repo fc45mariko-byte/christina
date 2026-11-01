@@ -30,7 +30,7 @@ function viewModule(view) {
   const n = navItem(view.id);
   const root = registry.tabs[view.id];
   if (!n || !root) return `${navbar('')}<div class="page"><div class="blank">This section is not available.</div></div>`;
-  // A module with its own Back button on inner screens (Body Oracle) hides Christina's there.
+  // A module can hide Christina's Back button on its own inner screens (nav.hideBack).
   return (n.hideBack && n.hideBack() ? '' : navbar('')) + root();
 }
 

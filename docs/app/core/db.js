@@ -28,6 +28,14 @@ const DB = {
     });
   },
 
+  getAllKeys(store) {
+    return new Promise((resolve, reject) => {
+      const request = this.db.transaction(store).objectStore(store).getAllKeys();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+
   get(store, key) {
     return new Promise((resolve, reject) => {
       const request = this.db.transaction(store).objectStore(store).get(key);
@@ -57,14 +65,14 @@ const DB = {
 };
 
 /** Loaded data. `records` holds every kind; `categories` is sorted by `order`. */
-const data = { records: [], threads: [], months: {}, categories: [], tags: [], schedule: [], tasks: [], projects: [], habits: [], habitLogs: [], states: [] };
+const data = { records: [], threads: [], months: {}, categories: [], tags: [], schedule: [], tasks: [], projects: [], habits: [], habitLogs: [], states: [], rituals: [], prayers: [], themes: [], ritualsMeta: {}, videoIds: new Set() };
 
 const fileURLs = new Map();
 async function fileURL(key) {
   if (fileURLs.has(key)) return fileURLs.get(key);
   const record = await DB.get('files', key);
   if (!record) return null;
-  // Christina stores { type, data }; Body Oracle media is stored as a Blob.
+  // Photos are stored as { type, data } or as a Blob.
   const blob = record instanceof Blob ? record : new Blob([record.data], { type: record.type });
   const url = URL.createObjectURL(blob);
   fileURLs.set(key, url);

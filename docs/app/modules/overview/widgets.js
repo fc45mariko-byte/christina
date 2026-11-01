@@ -4,7 +4,7 @@
  * A widget returns '' when it has nothing to show and nothing to offer (e.g. no reminders due). */
 import { esc, ymd, monthTitle, monthName, monthStart, addMonths, currentMonth, F, addDays, uuid } from '../../core/util.js';
 import { data } from '../../core/db.js';
-import { lookFor, recordsBetween, newestFirst, monthImageKey, recordTitle } from '../../core/queries.js';
+import { isWriting, lookFor, recordsBetween, newestFirst, monthImageKey, recordTitle } from '../../core/queries.js';
 import { register, registry } from '../../core/registry.js';
 import { prefs } from '../../core/prefs.js';
 import { render } from '../../core/render.js';
@@ -15,7 +15,8 @@ import { habitRow, activeHabits, isDone } from '../habits/index.js';
 import { projectCard, progress } from '../projects/index.js';
 import { planRow, upcomingPlans, plansOn, dueReminders, whenText } from '../calendar/plans.js';
 import { weekStartOf } from '../calendar/grid.js';
-import { BODB, isBodyOracleRecord } from '../body-oracle/store.js';
+import { statePills } from '../states/index.js';
+import { tonightItem, ritualCard, byUse } from '../rituals/index.js';
 
 const head = (title, link = '', action = '') =>
   `<div class="w-head"><span class="w-title">${esc(title)}</span>${link ? `<button class="w-link" ${action}>${esc(link)}</button>` : ''}</div>`;
@@ -107,10 +108,10 @@ function projects(size) {
   return `${head('Projects', 'All', go('projects'))}${list.slice(0, LIMIT[size]).map(projectCard).join('')}`;
 }
 
-// ------------------------------------------------------------ Journal, Body Oracle
+// ------------------------------------------------------------ Journal, states, rituals
 
 function journal(size) {
-  const list = data.records.filter((r) => r.kind === 'journal' && !r.archived).sort(newestFirst);
+  const list = data.records.filter((r) => isWriting(r) && !r.archived).sort(newestFirst);
   const last = list[0];
   if (size === 's') return `${head('Journal', 'Write', 'data-action="newJournal"')}<span class="w-big">${list.length}</span><span class="caption">${last ? `Last: ${esc(F.dayMonth.format(new Date(last.occurredAt)))}` : 'entries'}</span>`;
   return `${head('Journal', 'All', go('journal'))}
@@ -118,23 +119,27 @@ function journal(size) {
     <button class="w-link" style="align-self:flex-start" data-action="newJournal">${icon('plus')} Write</button>`;
 }
 
-/** "How are you?": Body Oracle's states. Tapping logs it for today (tap again to take it back). */
-const todayStateEntry = (stateId) => {
-  const day = ymd(new Date());
-  return data.records.find((r) => r.kind === 'state' && ymd(new Date(r.occurredAt)) === day && !r.text && ((r.payload && r.payload.stateIds) || []).length === 1 && r.payload.stateIds[0] === stateId);
-};
-function bodyOracle(size) {
-  const states = [...data.states].sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9));
-  const recent = data.records.filter((r) => isBodyOracleRecord(r) && r.kind !== 'state' && !r.archived).sort(newestFirst);
-  const chips = states.length
-    ? `<div class="chip-row">${states.map((s) => {
-        const on = !!todayStateEntry(s.id);
-        return `<button class="pill ${on ? 'on' : ''}" data-action="logStateToday" data-id="${esc(s.id)}" aria-pressed="${on}"><span class="dot" style="background:${esc(s.color)};width:8px;height:8px"></span>${esc(s.name)}</button>`;
-      }).join('')}</div>`
-    : '';
-  if (!states.length && !recent.length) return `${head('Body Oracle', 'Open', go('bo'))}<span class="muted">Record how you feel, what your body notices, and what you do for yourself.</span>`;
-  return `${head('How are you?', 'Body Oracle', go('bo'))}${chips}
-    ${size !== 's' && recent.length ? `<div class="list">${recent.slice(0, size === 'l' ? 5 : 2).map((r) => recordRow(r)).join('')}</div>` : ''}`;
+/** "How are you?": tap a state to log it for today, tap again to take it back. */
+function states(size) {
+  if (!data.states.length) return `${head('How are you?')}<span class="muted">Make your own words for how you are.</span><button class="w-link" style="align-self:flex-start" data-action="openStates">${icon('plus')} Add states</button>`;
+  const recent = data.records.filter((r) => r.kind === 'state' && !r.archived).sort(newestFirst);
+  return `${head('How are you?', size === 's' ? '' : 'Edit', 'data-action="openStates"')}${statePills()}
+    ${size === 'l' && recent.length ? `<div class="list">${recent.slice(0, 4).map((r) => recordRow(r)).join('')}</div>` : ''}`;
+}
+
+function tonight() {
+  const t = tonightItem();
+  if (!t) return '';
+  const isR = t.kind === 'ritual';
+  return `${head(t.kept ? 'For tonight' : 'For tonight · suggested', 'Rituals', go('rituals'))}
+    <button class="row" data-action="${isR ? 'openRitual' : 'openPrayer'}" data-id="${esc(t.item.id)}"><span class="cat-icon">${icon(isR ? 'candle' : 'prayer')}</span><span class="row-text"><span class="body" style="font-weight:600">${esc(t.item.name)}</span><span class="caption">${isR ? 'Ritual' : 'Prayer'}${(t.item.situations || [])[0] ? ` · ${esc(t.item.situations[0])}` : ''}</span></span>${icon('right', 'chev')}</button>`;
+}
+
+function rituals(size) {
+  const list = [...data.rituals].sort(byUse);
+  if (!list.length) return `${head('Rituals')}<span class="muted">Prepare a ritual for a moment you know will come again.</span><button class="w-link" style="align-self:flex-start" data-action="newRitual">${icon('plus')} New ritual</button>`;
+  if (size === 's') return `${head('Rituals', 'Open', go('rituals'))}<span class="w-big">${list.length}</span><span class="caption">${list[0].favourite ? `★ ${esc(list[0].name)}` : 'prepared'}</span>`;
+  return `${head('Rituals', 'All', go('rituals'))}<div class="rgrid">${list.slice(0, size === 'l' ? 6 : 2).map(ritualCard).join('')}</div>`;
 }
 
 // ------------------------------------------------------------ This week (personal statistics)
@@ -146,8 +151,8 @@ function week() {
   const inRange = (iso, a, b) => { const t = new Date(iso).getTime(); return t >= a.getTime() && t < b.getTime(); };
   const dayIn = (day, a, b) => day >= ymd(a) && day < ymd(b);
   const count = (a, b) => ({
-    recorded: data.records.filter((r) => !r.archived && r.kind !== 'journal' && inRange(r.occurredAt, a, b)).length,
-    journal: data.records.filter((r) => r.kind === 'journal' && inRange(r.occurredAt, a, b)).length,
+    recorded: data.records.filter((r) => !r.archived && !isWriting(r) && inRange(r.occurredAt, a, b)).length,
+    journal: data.records.filter((r) => isWriting(r) && inRange(r.occurredAt, a, b)).length,
     tasks: data.tasks.filter((t) => t.done && t.completedAt && inRange(t.completedAt, a, b)).length,
     habits: data.habitLogs.filter((l) => dayIn(l.date, a, b)).length,
   });
@@ -171,25 +176,11 @@ register({
     habits: { label: 'Habits', sizes: ['s', 'm', 'l'], defaultSize: 's', render: habits },
     projects: { label: 'Projects', sizes: ['s', 'm', 'l'], defaultSize: 'm', render: projects },
     journal: { label: 'Journal', sizes: ['s', 'm', 'l'], defaultSize: 's', render: journal },
-    bodyOracle: { label: 'Body Oracle', sizes: ['s', 'm', 'l'], defaultSize: 'm', render: bodyOracle },
+    states: { label: 'How are you?', sizes: ['s', 'm', 'l'], defaultSize: 'm', render: states },
+    tonight: { label: 'For tonight', sizes: ['m'], defaultSize: 'm', render: tonight, hint: 'A ritual or prayer you kept for tonight; after 5 pm, one made for the night' },
+    rituals: { label: 'Rituals', sizes: ['s', 'm', 'l'], defaultSize: 'm', render: rituals },
     week: { label: 'This week', sizes: ['m'], defaultSize: 'm', render: week },
-  },
-  actions: {
-    async logStateToday(el) {
-      const id = el.dataset.id;
-      const existing = todayStateEntry(id);
-      try {
-        if (existing) await BODB.del(existing.id);
-        else {
-          const now = Date.now();
-          await BODB.put({ id: uuid(), type: 'entry', kind: 'state', text: '', date: now, stateIds: [id], photoIds: [], categoryIds: [], threadIds: [], color: null, colorId: null, tags: '', location: '', ritualId: null, intentionId: null, createdAt: now, updatedAt: now });
-        }
-      } catch (error) {
-        return fail(error, 'save this');
-      }
-      render();
-    },
-  },
+  }
 });
 
 export { clock };

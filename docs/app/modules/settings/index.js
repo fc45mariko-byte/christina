@@ -8,6 +8,7 @@ import { register } from '../../core/registry.js';
 import { navbar, catIcon, settingsRow, toast } from '../../ui/components.js';
 import { icon } from '../../ui/icons.js';
 import { exportBackup, exportEventsCSV, readBackup, restoreBackup, eraseEverything } from '../../services/backup.js';
+import { readOracleBackup, importOracleBackup } from '../../services/oracle-import.js';
 import { appearance, setAppearance, resetAppearance, ACCENTS } from '../../core/appearance.js';
 import './personalize.js';
 import './organize.js';
@@ -22,6 +23,7 @@ function viewSettings() {
     </div>
     <div class="settings-list">
       ${settingsRow('Categories', 'grid', 'openCategories')}
+      ${settingsRow('States', 'state', 'openStates')}
       ${settingsRow('Tags', 'flag', 'openTags')}
     </div>
     <div class="settings-list">
@@ -48,7 +50,6 @@ function viewAppearance() {
     <div class="settings-list">${settingsRow('Personalized Mode', 'palette', 'openPersonalize')}</div>
     <p class="footnote" style="padding:0">Give each month its own images, colors and title.</p>
     <button class="btn-secondary" data-action="resetAppearance">Back to Christina’s original look</button>
-    <p class="footnote" style="padding:0">Body Oracle keeps its own accent, card and corner settings in its Settings → Theme and Corners.</p>
   </div>`;
 }
 
@@ -80,7 +81,7 @@ function viewReminders() {
 function viewPrivacy() {
   return `${navbar('Privacy')}<div class="page tight">
     <h1>Everything stays on this device.</h1>
-    <p>Events, threads, journal entries, Body Oracle records, plans, tasks, projects, habits, photos, videos and settings are stored only in this app's storage on this device. Nothing is synced, uploaded or sent to any server. There is no account, no tracking, no API and no AI.</p>
+    <p>Events, threads, journal entries, dreams, signs, states, rituals, prayers, themes, plans, tasks, projects, habits, photos, videos and settings are stored only in this app's storage on this device. Nothing is synced, uploaded or sent to any server. There is no account, no tracking, no API and no AI.</p>
     <p style="margin:0">Because nothing leaves the device, nothing else holds a copy. Removing the app from the Home Screen or clearing the website's data deletes everything. Export a backup now and then (Settings → Data &amp; Export) and keep the file somewhere safe.</p>
   </div>`;
 }
@@ -90,7 +91,7 @@ function viewAbout() {
     <h1>Christina</h1>
     <span class="label">Version 2.0</span>
     <p style="margin-top:16px">A visual system for seeing life accumulate over time.</p>
-    <p style="margin:0">With Body Oracle, Journal, Calendar, Tasks, Projects, Habits and Insights.</p>
+    <p style="margin:0">With Journal, Rituals, Themes, Calendar, Tasks, Projects, Habits and Insights.</p>
     <p style="margin:0">What actually happened?</p>
     <p style="margin:0">Evidence over guilt. Temporal continuity over streaks.</p>
   </div>`;
@@ -108,9 +109,10 @@ function viewData() {
     </div>
     <div class="settings-list">
       <label class="settings-row file-btn">${icon('share', 'ic')}<span class="grow">Restore from a backup</span><input type="file" accept="application/json,.json" data-file-input="restoreBackup"></label>
+      <label class="settings-row file-btn">${icon('prayer', 'ic')}<span class="grow">Import from the Body Oracle app</span><input type="file" accept="application/json,.json" data-file-input="importOracle"></label>
       <button class="settings-row" data-action="eraseEverything">${icon('x', 'ic')}<span class="grow danger">Erase everything</span></button>
     </div>
-    <p class="footnote">Restoring replaces everything on this device with the backup. Erasing deletes everything Christina holds on this device. Both ask first. A Body Oracle backup is restored from Body Oracle → Settings → Backup.</p>
+    <p class="footnote">Restoring replaces everything on this device with the backup. Importing from the Body Oracle app adds its entries, rituals, prayers, states and themes, and changes nothing else. Erasing deletes everything Christina holds on this device. All of them ask first.</p>
     <p class="footnote">The backup holds every event, thread, month, photo and setting (${plural(data.records.length, 'event', 'events')}, ${plural(data.threads.length, 'thread', 'threads')}, ${plural(photos + images, 'photo', 'photos')}). The CSV lists events only, for spreadsheets. Both are saved as files you choose where to keep. All data stays on this device.</p>
   </div>`;
 }
@@ -127,6 +129,24 @@ async function runExport(work, label) {
 
 register({
   fileActions: {
+    async importOracle(files) {
+      let read;
+      try {
+        read = await readOracleBackup(files[0]);
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+      if (!confirm(`Bring in ${read.summary} from the Body Oracle app? Nothing already in Christina is removed. Notes, photos and body observations become journal entries; threads become themes.`)) return;
+      try {
+        await importOracleBackup(read.backup);
+      } catch (error) {
+        console.error(error);
+        alert(`Couldn't import. ${error && error.message ? error.message : error}`);
+        return;
+      }
+      location.reload();
+    },
     async restoreBackup(files) {
       let backup;
       try {
@@ -174,7 +194,7 @@ register({
       render();
     },
     async eraseEverything() {
-      if (!confirm('Erase everything Christina holds on this device? Events, journal, Body Oracle, plans, tasks, projects, habits, photos and settings are all deleted. This cannot be undone.')) return;
+      if (!confirm('Erase everything Christina holds on this device? Events, journal, rituals, prayers, states, themes, plans, tasks, projects, habits, photos and settings are all deleted. This cannot be undone.')) return;
       if (!confirm('Are you sure? Export a backup first if you might want any of it back.')) return;
       try {
         await eraseEverything();

@@ -1,4 +1,5 @@
-/* Christina — one search across everything recorded: events, journal entries, Body Oracle records, and threads.
+/* Christina — one search across everything recorded (events, journal, dreams, signs, states, rituals done),
+ * threads, themes, and the rituals and prayers themselves.
  * Matching is plain text, case-insensitive, every word must appear somewhere in the record. */
 import { data } from '../core/db.js';
 import { registry } from '../core/registry.js';
@@ -17,15 +18,17 @@ function recordText(r) {
     ...(r.categoryIds || []).map((id) => categoryById(id).name),
     ...(r.tagIds || []).map((id) => (tagById(id) || {}).name),
     ...(r.threadIds || []).map((id) => (data.threads.find((t) => t.id === id) || {}).title),
+    ...(r.themeIds || []).map((id) => ((data.themes || []).find((t) => t.id === id) || {}).name),
     p.tags, p.location, body.sensation, body.region,
   ].filter(Boolean).join(' \n '));
 }
 
-/** kind: 'all' | 'activity' | 'journal' | 'bodyOracle' (every other kind). */
+/** kind: 'all' | 'activity' | 'journal' (entries, dreams, signs) | 'ritual' (rituals done) | 'state'. */
 function search(query, kind = 'all') {
   const words = lower(query).split(/\s+/).filter(Boolean);
   if (!words.length) return { records: [], threads: [] };
-  const kindOk = (r) => kind === 'all' || (kind === 'bodyOracle' ? !['activity', 'journal'].includes(r.kind) : r.kind === kind);
+  const WRITING = ['journal', 'dream', 'sign'];
+  const kindOk = (r) => kind === 'all' || (kind === 'journal' ? WRITING.includes(r.kind) : r.kind === kind);
   const records = data.records
     .filter((r) => !r.archived && kindOk(r))
     .filter((r) => {
@@ -33,10 +36,17 @@ function search(query, kind = 'all') {
       return words.every((w) => text.includes(w));
     })
     .sort(newestFirst);
-  const threads = kind === 'all'
-    ? data.threads.filter((t) => words.every((w) => lower(`${t.title} ${t.description || ''}`).includes(w)))
+  const has = (text) => words.every((w) => lower(text).includes(w));
+  const all = kind === 'all';
+  const threads = all ? data.threads.filter((t) => has(`${t.title} ${t.description || ''}`)) : [];
+  const themes = all ? (data.themes || []).filter((t) => has(`${t.name} ${t.description || ''}`)) : [];
+  const library = all || kind === 'ritual'
+    ? [
+        ...(data.rituals || []).filter((r) => has(`${r.name} ${r.intention || ''} ${(r.situations || []).join(' ')} ${(r.steps || []).map((s) => s.text).join(' ')}`)).map((r) => ({ kind: 'ritual', item: r })),
+        ...(all ? (data.prayers || []).filter((p) => has(`${p.name} ${p.text || ''} ${(p.situations || []).join(' ')}`)).map((p) => ({ kind: 'prayer', item: p })) : []),
+      ]
     : [];
-  return { records, threads };
+  return { records, threads, themes, library };
 }
 
 export { search };

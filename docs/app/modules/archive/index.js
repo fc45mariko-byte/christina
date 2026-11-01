@@ -1,5 +1,5 @@
 /* Archive: every month that holds something, each opening as a read-only calendar,
- * and one search across everything recorded (events, journal, Body Oracle) and threads. */
+ * and one search across everything recorded, threads, themes, rituals and prayers. */
 import { esc, monthName, monthShort, monthTitle, monthStart, addMonths, rangeText, $ } from '../../core/util.js';
 import { lookFor, monthImageKey, monthsWithContent, isPastMonth, recordMonth } from '../../core/queries.js';
 import { state, push } from '../../core/state.js';
@@ -12,7 +12,7 @@ import { monthWeeks, monthField } from '../calendar/grid.js';
 
 state.archiveQuery = '';
 state.archiveKind = 'all';
-const KINDS = [['all', 'All'], ['activity', 'Events'], ['journal', 'Journal'], ['bodyOracle', 'Body Oracle']];
+const KINDS = [['all', 'All'], ['activity', 'Events'], ['journal', 'Journal'], ['ritual', 'Rituals'], ['state', 'States']];
 
 function monthTiles() {
   const months = monthsWithContent();
@@ -29,13 +29,15 @@ function monthTiles() {
 }
 
 function results() {
-  const { records, threads } = search(state.archiveQuery, state.archiveKind);
-  const count = records.length + threads.length;
+  const { records, threads, themes, library } = search(state.archiveQuery, state.archiveKind);
+  const count = records.length + threads.length + themes.length + library.length;
   return `<div class="chip-row">${KINDS.map(([k, l]) => `<button class="pill ${state.archiveKind === k ? 'on' : ''}" data-action="archiveKind" data-kind="${k}" aria-pressed="${state.archiveKind === k}">${l}</button>`).join('')}</div>
     <span class="caption">${count ? `${count} ${count === 1 ? 'result' : 'results'}` : 'Nothing matches that search.'}</span>
     ${threads
       .map((t) => `<button class="card" data-action="openThread" data-id="${esc(t.id)}"><span class="dot" style="background:#${esc(t.color)}"></span><span class="row-text"><span>${esc(t.title)}</span><span class="caption">Thread · ${esc(rangeText(t.startDate, t.endDate))}</span></span></button>`)
       .join('')}
+    ${themes.map((t) => `<button class="card" data-action="openTheme" data-id="${esc(t.id)}"><span class="dot" style="background:#${esc(t.color)}"></span><span class="row-text"><span>${esc(t.name)}</span><span class="caption">Theme</span></span></button>`).join('')}
+    ${library.map(({ kind, item }) => `<button class="card" data-action="${kind === 'ritual' ? 'openRitual' : 'openPrayer'}" data-id="${esc(item.id)}"><span class="cat-icon">${icon(kind === 'ritual' ? 'candle' : 'prayer')}</span><span class="row-text"><span>${esc(item.name)}</span><span class="caption">${kind === 'ritual' ? 'Ritual' : 'Prayer'}</span></span></button>`).join('')}
     ${records.length ? `<div class="list">${records.slice(0, 200).map((r) => recordRow(r, isPastMonth(recordMonth(r)))).join('')}</div>` : ''}`;
 }
 

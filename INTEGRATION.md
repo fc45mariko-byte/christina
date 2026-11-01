@@ -1,7 +1,8 @@
 # Christina × Body Oracle — integration plan
 
-Christina is the personal dashboard. Body Oracle (from `fc45mariko-byte/bodyoracle`, left unchanged)
-becomes its self-observation module. Christina's interface is the foundation; Body Oracle is restyled to match it.
+Christina is the personal dashboard. Body Oracle (from `fc45mariko-byte/bodyoracle`, left unchanged) was first ported
+as a module (steps 4–10), then taken apart (step 11): only its best parts stay, as Christina's own sections, and the
+name is gone from the app.
 
 Work happens on the branch `claude/christina-dashboard-integration-4nuu33`. `main` and the live site are not touched
 until cut-over.
@@ -33,7 +34,9 @@ docs/
     ui/                  tokens.css, base.css, components.css, components.js, icons.js
     modules/
       overview/  calendar/  add/  records/  threads/  archive/  settings/
-      body-oracle/       bo.js (the module), store.js (storage adapter), legacy.js (one-time import), body-oracle.css
+      rituals/           Rituals and Prayers (one section), guided run, "For tonight"
+      themes/            Themes (long-running parts of inner life)
+      states/            "How are you?" and Settings → States
       journal/           Journal
       tasks/  projects/  habits/
       calendar/          grid.js, plans.js (scheduled events), index.js (Day / Week / Month)
@@ -43,23 +46,25 @@ docs/
 Each module registers itself with `register({ tabs, screens, actions, changeActions, fileActions, validators })`.
 The core only reads the registry, so new modules never require core changes.
 
-## Data stores (database `christina`, schema v2 — in place)
+## Data stores (database `christina`, schema v3 — in place)
 
 The full schema is documented in `docs/app/core/schema.js`. Every record has `id`, `createdAt`, `updatedAt` (ISO 8601).
 
 | Store | Holds | Source |
 |---|---|---|
-| `records` | Everything that happened. `kind` = `activity` now; later `journal`, `note`, `body`, `state`, `dream`, `sign`, `ritual-done`. Shared fields: `occurredAt`, `title`, `text`, `categoryIds`, `threadIds`, `tagIds`, `mediaIds`, `linkedRecordIds`, `payload`, `archived` | Christina events (migrated), Body Oracle entries (step 4) |
-| `threads` | One shared thread type: `title`, `categoryId`, `color`, `startDate`/`endDate` (bar on the calendar); Body Oracle's cover, icon and description added in step 4 | both apps' threads, merged |
+| `records` | Everything that happened. `kind` = `activity`, `journal`, `dream`, `sign`, `state`, `ritual`. Writing kinds also carry `themeIds`. Shared fields: `occurredAt`, `title`, `text`, `categoryIds`, `threadIds`, `tagIds`, `mediaIds`, `linkedRecordIds`, `payload`, `archived` | Christina events (migrated), Body Oracle entries (step 4) |
+| `threads` | Christina's threads: `title`, `categoryId`, `color`, `startDate`/`endDate` (bar on the calendar) | Christina |
+| `themes` | `name`, `description`, `color`, `icon`, `coverId`, `order` | Body Oracle's threads (step 11) |
 | `months` | Month images, palette, title | Christina |
 | `files` | Photos and other media, keyed by path | Christina (Body Oracle media in step 4) |
 | `categories` | `name`, `color`, `icon`, `order`; Christina's 8 seeded as presets (`cat-study` …) | Christina presets, Body Oracle categories (step 4) |
 | `schedule` | Planned calendar items | new (step 7) |
 | `tasks`, `projects`, `habits`, `habitLogs` | Task, project and habit data; one log row per habit check-in | new (step 7) |
 | `tags`, `states` | Editable labels | Body Oracle (step 4) |
-| `rituals`, `prayers`, `intentions`, `sigils`, `oracleReadings` | Body Oracle library | Body Oracle (step 4) |
+| `rituals`, `prayers` | Rituals (with `themeIds`) and prayers | Body Oracle |
+| `intentions`, `sigils`, `oracleReadings` | Kept as they were, no longer shown | Body Oracle |
 | `legacy` | Untouched copies of v1 `events`, `threads`, `months` as they were before the upgrade | migration |
-| `meta` | Schema version and when the upgrade ran | migration |
+| `meta` | Schema version and upgrades; `rituals` ("For tonight", situations); import markers | migration |
 
 Per-device preferences (week start, week view, dashboard layout, tab slots) stay in `localStorage` under `christina.*` and are included in the backup.
 
@@ -77,16 +82,19 @@ Insights are computed on demand and always link to the records they were counted
 8. **Insights.** — done
 9. **Appearance and customisation settings.** — done
 10. **Tests on phone and desktop sizes, cut-over.** — done (no separate preview host was chosen; the integration branch was tested locally and merged into `main`)
+11. **Take Body Oracle apart: keep its best parts as Christina sections, drop the rest and the name.** — done
 
 ## Decisions
 
 | Question | Decision |
 |---|---|
 | Habit progress | Streaks (current and longest) |
-| Christina threads vs Body Oracle threads | Merge into one thread type |
+| Christina threads vs Body Oracle threads | Merged in step 4; separated again in step 11: Body Oracle's threads are now **Themes** (not the same thing as Christina's threads) |
 | Preview hosting | No preference given; build and test on the branch for now |
-| Oracle archetype readings | Opt-in: count lines always shown, archetype text only when turned on in Settings |
-| Rituals, prayers, sigils, intentions, sample content | Keep inside Body Oracle |
+| Oracle archetype readings | Opt-in (steps 4–10); the Oracle was removed in step 11 |
+| Rituals, prayers, sigils, intentions, sample content | Step 11: Rituals and Prayers are one section, **Rituals**; intentions and sigils removed from the app (their data is kept) |
+| What stays from Body Oracle (step 11) | States ("How are you?"), dreams and signs (in the Journal), "For tonight" and the moon, rituals, prayers, themes |
+| What goes (step 11) | Body map, the Oracle, intentions, sigils, "What do you need?", and the name "Body Oracle" (only the import option names it) |
 | Read-only past months scope | Everything: all records lock once their month has passed |
 | Relationships, boundaries, sleep, energy, mood intensity | New features, built after the core modules (Tasks, Habits, Projects, Insights) |
 | Reminders | In-app now; push server planned later |
@@ -365,19 +373,56 @@ erase everything; no console errors.
   present; the first open may still show the cached older version, the next one runs the new version.
 - Merged into `main` (GitHub Pages builds from `docs/` on `main`).
 
+## Step 11 — Body Oracle taken apart
+
+The Body Oracle module (`modules/body-oracle/`, its overlays and stylesheet) is removed. What stays is rebuilt in
+Christina's own interface:
+
+- **Rituals** (tab-bar slot by default, `modules/rituals/`): Rituals | Prayers in one section. A ritual has a picture,
+  situations ("Before sleep", "When I need confidence", or your own), an intention, things to prepare (tick what you
+  have), visual references, steps (with details, timer badges), attached prayers, themes, group and duration. "Begin"
+  runs it step by step and records it when finished (a record of kind `ritual`, with a note); "Record without guiding"
+  records it directly. Prayers have situations, text, a picture, and the rituals they belong to. **For tonight**: keep
+  one ritual or prayer for tonight, or after 5 pm get one suggested for the night; shown on the Rituals page and as an
+  Overview widget.
+- **Themes** (`modules/themes/`): Body Oracle's threads, renamed. Name, description, colour, icon, cover; the theme page
+  lists its rituals and records and has "Write in this theme". Christina's threads (spans of time) are unchanged.
+- **How are you?** (`modules/states/`): your states, tapped to log for today (tap again to undo), from the Overview
+  widget or + → How are you?; edited in Settings → States.
+- **Dreams & signs** are Journal types (Entries / Dreams / Signs filter); journal entries can have photos and a theme.
+- **The moon** phase is drawn next to the date on Overview.
+- **Removed from the app:** body map, the Oracle, intentions, sigils, "What do you need?", Body Oracle's own settings,
+  its archive and onboarding. Their data is not deleted: intentions, sigils and readings stay in their stores.
+- **Database v3** (`core/schema.js`, rules in `core/legacy.js`): on first open after the update, threads made in Body
+  Oracle become themes; notes, photos, intentions and "mind" records become journal entries; body-map observations
+  become journal entries titled "Body: Tense · left shoulder · intensity 4 of 5" with that line kept in the text;
+  references to those threads move to `themeIds` on records and rituals (a project pointing at one loses that link,
+  since projects only follow dated threads); "For tonight" and situations move to
+  `meta.rituals`. The v2 threads and records are copied first (`legacy`: `threads@v2`, `records@v2`).
+- **Import from the Body Oracle app** (Settings → Data & Export): reads a Body Oracle backup file and adds it with the
+  same rules; categories and themes with the same name are merged; importing twice changes nothing. The old Body
+  Oracle database on the same device is still brought in once automatically.
+- Fixed on the way: preset categories were re-added on every database upgrade; now only when coming from v1.
+
+Verification: a real Body Oracle backup (15 entries, 6 threads, 6 rituals, 5 prayers, 6 states, 66 photos and videos)
+imported into a fresh Christina — all entries in the Journal (4 body observations as text), 6 themes and no threads,
+rituals run and recorded, prayers readable, photos and videos load, "For tonight", "How are you?" and the moon shown,
+no "Body Oracle" text outside the import option, no console errors. The same backup restored into the live v2 version,
+a dated Christina thread and a renamed category added, then the new version loaded at the same address: database v3,
+all 16 records kept, the Christina thread kept, 6 themes, 8 records and the rituals moved to themes, renamed category
+kept, no duplicate categories. The earlier suites (Journal, dashboard, calendar/tasks/projects/habits, Insights,
+settings, every section at 4 widths in light and dark, cut-over) were updated for the new sections and pass.
+
 ## Known limitations
 
 - **No lock-screen notifications.** Reminders show inside the app (Overview and when it opens). An iPhone web app can
   only notify through a push server, and Christina has no server.
 - **One device.** No sync between devices; move data with Export backup → Restore. Clearing the site's data or removing
   the app deletes everything that was not exported.
-- **Large videos in Body Oracle** (up to 250 MB each) make backup files large; the JSON backup holds media as text and
+- **Large videos** brought in from Body Oracle (up to 250 MB each) make backup files large; the JSON backup holds media as text and
   very large libraries may not export on a phone with little memory.
 - **Plans don't repeat.** There is no recurrence for plans or tasks yet.
 - **Text size** follows the design's fixed sizes; the system "Larger Text" setting is not applied.
 - **The Body Oracle site** (`bodyoracle` repository) is unchanged and still serves the original Body Oracle. Its data
-  comes into Christina through its backup file, or automatically if the combined app is ever served at that address
-  (see "Deployment at the Body Oracle address").
-- **Body Oracle's own appearance settings** (accent, cards, corners) stay inside Body Oracle.
-- **Records added in Body Oracle before it was opened** get their full list titles (e.g. state names) the first time
-  Body Oracle is opened.
+  comes into Christina through Settings → Data & Export → Import from the Body Oracle app.
+- **New videos** can't be added; videos brought in from Body Oracle play wherever they appear.

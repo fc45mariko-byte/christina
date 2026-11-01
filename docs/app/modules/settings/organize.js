@@ -1,5 +1,5 @@
 /* Settings → Categories, Tags and Sections: the person's own organization.
- * Categories are shared by every section (events, journal, tasks, plans, habits, Body Oracle, and the calendar's
+ * Categories are shared by every section (events, journal, tasks, plans, habits, and the calendar's
  * colours). "Other" always exists: anything whose category is deleted is shown under it. */
 import { esc, uuid } from '../../core/util.js';
 import { DB, data } from '../../core/db.js';
@@ -32,7 +32,7 @@ function viewCategories() {
       .join('')}
       <button class="settings-row" data-action="newCategory">${icon('plus', 'ic')}<span class="grow">Add a category</span></button>
     </div>
-    <p class="footnote">Categories are shared everywhere: events, journal, plans, tasks, habits and Body Oracle. Their colours are the calendar's colours. A month with its own palette recolours them by position.</p>
+    <p class="footnote">Categories are shared everywhere: events, journal, plans, tasks and habits. Their colours are the calendar's colours. A month with its own palette recolours them by position.</p>
   </div>`;
 }
 
@@ -62,7 +62,7 @@ function viewTags() {
   const list = [...data.tags].sort((a, b) => a.name.localeCompare(b.name));
   return `${navbar('Tags')}<div class="page tight">
     ${list.length ? `<div class="settings-list">${list.map((t) => `<button class="settings-row" data-action="editTag" data-id="${esc(t.id)}"><span class="grow">${esc(t.name)}</span><span class="caption">${tagUses(t.id)}</span>${icon('right', 'chev')}</button>`).join('')}</div>` : '<div class="blank">No tags yet. Add them to journal entries.</div>'}
-    <p class="footnote">Tags are made when you type them on a journal entry. Body Oracle keeps its own free-text tags on its entries.</p>
+    <p class="footnote">Tags are made when you type them on a journal entry.</p>
   </div>`;
 }
 function viewTagEdit() {

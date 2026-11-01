@@ -4,9 +4,15 @@ import { state } from './state.js';
 import { render } from './render.js';
 import { registry } from './registry.js';
 import { refreshValidity } from './validation.js';
+/** Sets state.<form>.<field>, or a deeper path such as rf.steps.2.text. Missing parents are not created. */
 function setPath(path, value) {
-  const [form, field] = path.split('.');
-  if (state[form]) state[form][field] = value;
+  const keys = path.split('.');
+  let target = state[keys[0]];
+  for (const k of keys.slice(1, -1)) {
+    if (target == null) return;
+    target = target[k];
+  }
+  if (target != null) target[keys[keys.length - 1]] = value;
 }
 
 let longPressTimer = null;

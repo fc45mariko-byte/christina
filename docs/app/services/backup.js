@@ -78,7 +78,7 @@ async function buildBackup() {
     schemaVersion: DB_VERSION,
     prefs: readPrefs(),
     stores: Object.fromEntries(await Promise.all(DATA_STORES.map(async (name) => [name, await DB.getAll(name)]))),
-    // Module settings kept in meta (e.g. Body Oracle's vocabulary, palette and home layout).
+    // Settings kept in meta (e.g. the Rituals section's "For tonight" and situations).
     settings: (await DB.getAll('meta')).filter((m) => m.key !== 'schema'),
     files,
   };
@@ -149,7 +149,7 @@ async function readBackup(file) {
     throw new Error('That file is not a Christina backup.');
   }
   if (!backup || backup.format !== BACKUP_FORMAT) {
-    if (backup && backup.app === 'body-oracle') throw new Error('This is a Body Oracle backup. Restore it from Body Oracle → Settings → Backup.');
+    if (backup && backup.app === 'body-oracle') throw new Error('This is a backup from the Body Oracle app. Use “Import from the Body Oracle app” instead.');
     throw new Error('That file is not a Christina backup.');
   }
   const records = backup.version >= 2 ? (backup.stores.records || []).length : (backup.events || []).length;

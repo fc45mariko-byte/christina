@@ -10,13 +10,14 @@ import { icon } from '../../ui/icons.js';
 import { navbar, toast } from '../../ui/components.js';
 import { openModule } from '../../shell/nav.js';
 import './widgets.js';
+import { moonSVG, moonName } from '../../ui/moon.js';
 
 const layoutOf = (columns, list) => ({ columns, widgets: list.map(([id, size, on = true]) => ({ id, size, on })) });
 /** Built when used, so widgets registered by later modules are included in “Everything”. */
 const presets = () => ({
-  Christina: layoutOf(2, [['reminders', 'm'], ['today', 's'], ['habits', 's'], ['month', 'l'], ['tasks', 'm'], ['upcoming', 'm'], ['bodyOracle', 'm'], ['journal', 's'], ['projects', 's'], ['week', 'm']]),
+  Christina: layoutOf(2, [['reminders', 'm'], ['tonight', 'm'], ['today', 's'], ['habits', 's'], ['states', 'm'], ['month', 'l'], ['tasks', 'm'], ['upcoming', 'm'], ['rituals', 'm'], ['journal', 's'], ['projects', 's'], ['week', 'm']]),
   Plan: layoutOf(2, [['reminders', 'm'], ['today', 'l'], ['tasks', 'l'], ['upcoming', 'm'], ['projects', 'm'], ['habits', 's'], ['clock', 's']]),
-  Reflect: layoutOf(1, [['reminders', 'm'], ['bodyOracle', 'l'], ['journal', 'l'], ['habits', 'm'], ['month', 'l'], ['week', 'm']]),
+  Reflect: layoutOf(1, [['reminders', 'm'], ['tonight', 'm'], ['states', 'l'], ['journal', 'l'], ['rituals', 'm'], ['habits', 'm'], ['month', 'l'], ['week', 'm']]),
   Everything: layoutOf(2, Object.keys(registry.widgets).map((id) => [id, registry.widgets[id].defaultSize])),
   Minimal: layoutOf(1, [['reminders', 'm'], ['month', 'l']]),
 });
@@ -58,7 +59,7 @@ function viewHome() {
     .join('');
   return `<div class="page tight">
     ${hint}
-    <div class="page-head"><span class="caption">${esc(F.weekdayDayMonth.format(new Date()))}</span><button class="nav-btn" data-action="editDashboard" aria-label="Customize Overview">${icon('sliders')}Customize</button></div>
+    <div class="page-head"><span class="caption" style="display:inline-flex;align-items:center;gap:6px">${esc(F.weekdayDayMonth.format(new Date()))} <span title="${esc(moonName())}">${moonSVG()}</span></span><button class="nav-btn" data-action="editDashboard" aria-label="Customize Overview">${icon('sliders')}Customize</button></div>
     <div class="wgrid">${cells || '<div class="blank wide">Every widget is switched off. Tap Customize to choose some.</div>'}</div>
   </div>`;
 }

@@ -59,8 +59,25 @@ async function deleteEvent(id) {
   data.records = data.records.filter((x) => x.id !== e.id);
   back();
 }
+/** Any other record (a state log, or a ritual done whose ritual was deleted): what it holds, read-only once its
+ *  month has passed, and Delete otherwise. */
+function viewRecord(id) {
+  const r = recordById(id);
+  if (!r) return `${navbar('')}<div class="page"><div class="blank">This record no longer exists.</div></div>`;
+  const kind = registry.kinds[r.kind] || { label: r.kind };
+  const locked = isPastMonth(recordMonth(r));
+  const states = ((r.payload && r.payload.stateIds) || []).map((sid) => data.states.find((s) => s.id === sid)).filter(Boolean);
+  return `${navbar('', locked ? '<span class="caption" style="padding:0 8px">Archived</span>' : '')}<div class="page">
+    <span class="label">${esc(kind.label)} · ${esc(F.full.format(new Date(r.occurredAt)))}</span>
+    <h1>${esc(r.title || kind.label)}</h1>
+    ${states.length ? `<div class="chip-row">${states.map((s) => `<span class="pill"><span class="dot" style="background:${esc(s.color)};width:8px;height:8px"></span>${esc(s.name)}</span>`).join('')}</div>` : ''}
+    ${r.text ? `<div style="white-space:pre-wrap">${esc(r.text)}</div>` : ''}
+    ${locked ? '' : `<button class="btn-secondary danger" data-action="deleteRecord" data-id="${esc(r.id)}">Delete</button>`}
+  </div>`;
+}
+
 register({
-  screens: { event: (view) => viewEventDetail(view.id, view.readOnly) },
+  screens: { event: (view) => viewEventDetail(view.id, view.readOnly), recordView: (view) => viewRecord(view.id) },
   actions: {
   openEvent(el) {
     const e = recordById(el.dataset.id);
@@ -72,13 +89,25 @@ register({
   deleteEvent(el) {
     deleteEvent(el.dataset.id);
   },
-  /** Opens any record in the section it belongs to (journal entry, Body Oracle record, or event). */
+  async deleteRecord(el) {
+    const r = recordById(el.dataset.id);
+    if (!r || isPastMonth(recordMonth(r)) || !confirm('Delete this record?')) return;
+    try {
+      await DB.write(['records'], (tx) => tx.objectStore('records').delete(r.id));
+    } catch (error) {
+      return fail(error, 'delete this');
+    }
+    data.records = data.records.filter((x) => x.id !== r.id);
+    back();
+  },
+  /** Opens any record in the section it belongs to (journal, ritual, state, or event). */
   openRecord(el) {
     const r = recordById(el.dataset.id);
     if (!r) return;
     const kind = registry.kinds[r.kind];
     if (kind && kind.open) kind.open(r);
-    else push({ name: 'event', id: r.id, readOnly: isPastMonth(recordMonth(r)) });
+    else if (r.kind === 'activity') push({ name: 'event', id: r.id, readOnly: isPastMonth(recordMonth(r)) });
+    else push({ name: 'recordView', id: r.id });
   },
   },
 });

@@ -22,6 +22,9 @@ function viewAdd() {
       <button class="pill" data-action="newTask">${icon('check')} Task</button>
       <button class="pill" data-action="newJournal">${icon('journal')} Journal</button>
       <button class="pill" data-action="newHabit">${icon('repeat')} Habit</button>
+      <button class="pill" data-action="openStateLog">${icon('state')} How are you?</button>
+      <button class="pill" data-action="newJournal" data-kind="dream">${icon('dream')} Dream</button>
+      <button class="pill" data-action="goRituals">${icon('candle')} Ritual</button>
     </div>
     ${state.addMode === 'did' ? eventFormHTML() : threadFormHTML()}
   </div>`;

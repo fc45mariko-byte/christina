@@ -14,7 +14,7 @@ import { prefs, Settings } from '../core/prefs.js';
 import { icon } from '../ui/icons.js';
 
 const SLOT_COUNT = 4;
-const DEFAULT_SLOTS = ['home', 'map', 'journal', 'threads'];
+const DEFAULT_SLOTS = ['home', 'map', 'journal', 'rituals'];
 const WIDE = window.matchMedia('(min-width: 900px)');
 
 /** Sections the person hid in Settings → Sections are left out everywhere. */

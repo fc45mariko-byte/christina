@@ -21,9 +21,11 @@ import './modules/tasks/index.js';
 import './modules/projects/index.js';
 import './modules/habits/index.js';
 import './modules/insights/index.js';
+import './modules/rituals/index.js';
+import './modules/themes/index.js';
+import './modules/states/index.js';
 import './modules/settings/index.js';
-import './modules/body-oracle/bo.js';
-import { importLegacyBodyOracle } from './modules/body-oracle/legacy.js';
+import { importOldOracleDatabase } from './services/oracle-import.js';
 import { toast } from './ui/components.js';
 import { applyAppearance } from './core/appearance.js';
 import { prefs } from './core/prefs.js';
@@ -53,12 +55,21 @@ register({
 
 async function boot() {
   bindEvents();
+  let imported = 0;
   try {
     await DB.open();
-    const [records, threads, months, categories, tags, schedule, tasks, projects, habits, habitLogs, states] = await Promise.all(
-      ['records', 'threads', 'months', 'categories', 'tags', 'schedule', 'tasks', 'projects', 'habits', 'habitLogs', 'states'].map((store) => DB.getAll(store))
-    );
-    Object.assign(data, { tags, schedule, tasks, projects, habits, habitLogs, states });
+    // Where the former Body Oracle app ran on this device, bring its data in once (its database is only read).
+    try {
+      imported = await importOldOracleDatabase();
+    } catch (error) {
+      console.error('Import from the old app', error);
+    }
+    const stores = ['records', 'threads', 'months', 'categories', 'tags', 'schedule', 'tasks', 'projects', 'habits', 'habitLogs', 'states', 'rituals', 'prayers', 'themes'];
+    const [records, threads, months, categories, tags, schedule, tasks, projects, habits, habitLogs, states, rituals, prayers, themes] = await Promise.all(stores.map((store) => DB.getAll(store)));
+    Object.assign(data, { tags, schedule, tasks, projects, habits, habitLogs, states, rituals, prayers, themes });
+    data.ritualsMeta = (await DB.get('meta', 'rituals')) || {};
+    const fileKeys = await DB.getAllKeys('files');
+    data.videoIds = new Set(fileKeys.filter((k) => String(k).endsWith('~v')).map((k) => String(k).slice('media/'.length, -2)));
     data.records = records;
     data.categories = categories.sort((a, b) => a.order - b.order);
     data.threads = threads;
@@ -67,15 +78,8 @@ async function boot() {
     $('#main').innerHTML = `<div class="page"><div class="blank">Christina couldn't open its data. ${esc(error && error.message ? error.message : String(error))}</div></div>`;
     return;
   }
-  // Where Body Oracle used to run, bring its existing data in once (the old database is left as it was).
-  let imported = 0;
-  try {
-    imported = await importLegacyBodyOracle();
-  } catch (error) {
-    console.error('Body Oracle import', error);
-  }
   render();
-  if (imported) toast(`Body Oracle: ${imported} ${imported === 1 ? 'entry' : 'entries'} brought in`);
+  if (imported) toast(`${imported} ${imported === 1 ? 'record' : 'records'} brought in from the old app`);
   else if (prefs.showReminders !== false) {
     const due = dueReminders();
     if (due.length) toast(due.length === 1 ? `Reminder: ${due[0].title}, ${whenText(due[0])}` : `${due.length} reminders on Overview`);

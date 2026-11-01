@@ -37,7 +37,7 @@ function eventRow(e, readOnly, palette = null) {
   </button>`;
 }
 
-/** Any record in a list. Christina's own events keep their row; journal and Body Oracle records show their
+/** Any record in a list. Christina's own events keep their row; other records (journal, rituals, states) show their
  *  kind's icon in their colour, and open in their own section. */
 function recordRow(r, readOnly, palette = null) {
   if (r.kind === 'activity') return eventRow(r, readOnly, palette);
