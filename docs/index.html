@@ -19,7 +19,9 @@
     try {
       var a = JSON.parse(localStorage.getItem('christina.appearance') || '{}'), r = document.documentElement;
       if (a.theme && a.theme !== 'system') r.setAttribute('data-theme', a.theme);
-      if (a.bg && a.bg !== 'plain') r.setAttribute('data-bg', a.bg);
+      var photo = a.bg === 'photo' ? JSON.parse(localStorage.getItem('christina.bgPhoto') || '""') : '';
+      if (photo) { r.setAttribute('data-bg', 'photo'); r.style.setProperty('--bg-photo', 'url("' + photo + '")'); if (a.veil && a.veil !== 'medium') r.setAttribute('data-veil', a.veil); }
+      else if (a.bg && a.bg !== 'plain' && a.bg !== 'photo') r.setAttribute('data-bg', a.bg);
       if (a.font && a.font !== 'system') r.setAttribute('data-font', a.font);
       if (a.density && a.density !== 'comfortable') r.setAttribute('data-density', a.density);
       if (a.cards && a.cards !== 'filled') r.setAttribute('data-cards', a.cards);

@@ -66,3 +66,13 @@
 
 /* ---------- Density ---------- */
 :root[data-density="compact"] { --margin: 12px; --pad: 9px; --gap: 6px; }
+
+/* ---------- Background picture (Settings → Appearance → Background → Picture) ----------
+   The picture sits behind the whole app; --bg and --surface become see-through veils over it. */
+:root[data-bg="photo"] { --veil: 0.72; --bg-base: #ffffff; --bg: rgb(255 255 255 / var(--veil)); --surface: rgb(244 244 242 / calc(var(--veil) * 0.85)); }
+:root[data-bg="photo"][data-veil="light"] { --veil: 0.42; }
+:root[data-bg="photo"][data-veil="strong"] { --veil: 0.88; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-bg="photo"] { --bg-base: #1a1a1a; --bg: rgb(26 26 26 / var(--veil)); --surface: rgb(38 38 38 / calc(var(--veil) * 0.85)); }
+}
+:root[data-theme="dark"][data-bg="photo"] { --bg-base: #1a1a1a; --bg: rgb(26 26 26 / var(--veil)); --surface: rgb(38 38 38 / calc(var(--veil) * 0.85)); }

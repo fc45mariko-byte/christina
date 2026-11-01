@@ -9,7 +9,7 @@ import { navbar, catIcon, settingsRow, toast } from '../../ui/components.js';
 import { icon } from '../../ui/icons.js';
 import { exportBackup, exportEventsCSV, readBackup, restoreBackup, eraseEverything } from '../../services/backup.js';
 import { readOracleBackup, importOracleBackup } from '../../services/oracle-import.js';
-import { appearance, setAppearance, resetAppearance, ACCENTS } from '../../core/appearance.js';
+import { appearance, setAppearance, resetAppearance, setBackgroundPhoto, removeBackgroundPhoto, backgroundPhoto, ACCENTS } from '../../core/appearance.js';
 import './personalize.js';
 import './organize.js';
 function viewSettings() {
@@ -36,6 +36,21 @@ function viewSettings() {
 const choice = (key, options) =>
   `<div class="segmented">${options.map(([v, l]) => `<button class="${appearance[key] === v ? 'on' : ''}" data-action="setAppearance" data-k="${key}" data-v="${v}">${l}</button>`).join('')}</div>`;
 
+function backgroundChoice() {
+  const photo = backgroundPhoto();
+  const on = appearance.bg === 'photo' && photo;
+  const tones = [['plain', 'Plain'], ['paper', 'Paper'], ['mist', 'Mist']]
+    .map(([v, l]) => `<button class="${appearance.bg === v ? 'on' : ''}" data-action="setAppearance" data-k="bg" data-v="${v}">${l}</button>`).join('');
+  const pick = (label, cls = '') => `<label class="${cls}" style="cursor:pointer">${label}<input type="file" accept="image/*" data-file-input="bgPhoto" hidden></label>`;
+  const pictureBtn = photo ? `<button class="${on ? 'on' : ''}" data-action="setAppearance" data-k="bg" data-v="photo">Picture</button>` : pick('Picture', 'seg-label');
+  return `<div class="segmented">${tones}${pictureBtn}</div>
+    ${on ? `<div class="bg-photo-row"><span class="bg-thumb" style="background-image:url(&quot;${photo}&quot;)"></span>
+      <span class="grow">${pick('<span class="w-link">Change picture</span>')}</span>
+      <button class="w-link" data-action="removeBgPhoto">Remove</button></div>
+      <span class="label">Veil</span>${choice('veil', [['light', 'Light'], ['medium', 'Medium'], ['strong', 'Strong']])}
+      <span class="caption">How much of the picture shows through the app. Stronger is easier to read.</span>` : `<span class="caption">Picture: your own image behind the whole app.</span>`}`;
+}
+
 function viewAppearance() {
   return `${navbar('Appearance')}<div class="page">
     <div class="section"><span class="label">Theme</span>${choice('theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']])}</div>
@@ -43,7 +58,7 @@ function viewAppearance() {
       <div class="swatches">${ACCENTS.map(([hex, name]) => `<button class="swatch${appearance.accent === hex ? ' on' : ''}" data-action="setAppearance" data-k="accent" data-v="${hex}" aria-label="${name}" aria-pressed="${appearance.accent === hex}"><span style="background:${hex ? `#${hex}` : 'var(--text)'}"></span></button>`).join('')}</div>
       <span class="caption">Buttons, the + button, checks, progress and charts. Ink follows the theme.</span>
     </div>
-    <div class="section"><span class="label">Background</span>${choice('bg', [['plain', 'Plain'], ['paper', 'Paper'], ['mist', 'Mist']])}</div>
+    <div class="section"><span class="label">Background</span>${backgroundChoice()}</div>
     <div class="section"><span class="label">Font</span>${choice('font', [['system', 'System'], ['serif', 'Serif'], ['rounded', 'Rounded']])}</div>
     <div class="section"><span class="label">Density</span>${choice('density', [['comfortable', 'Comfortable'], ['compact', 'Compact']])}</div>
     <div class="section"><span class="label">Overview widgets</span>${choice('cards', [['filled', 'Filled'], ['outline', 'Outlined']])}</div>
@@ -129,6 +144,14 @@ async function runExport(work, label) {
 
 register({
   fileActions: {
+    async bgPhoto(files) {
+      try {
+        await setBackgroundPhoto(files[0]);
+      } catch (error) {
+        alert(error.message);
+      }
+      render();
+    },
     async importOracle(files) {
       let read;
       try {
@@ -187,6 +210,10 @@ register({
     exportBackup: () => runExport(exportBackup, 'Backup'),
     setAppearance(el) {
       setAppearance(el.dataset.k, el.dataset.v);
+      render();
+    },
+    removeBgPhoto() {
+      removeBackgroundPhoto();
       render();
     },
     resetAppearance() {

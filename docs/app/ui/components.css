@@ -350,3 +350,8 @@ img[data-file]:not([src]) { visibility: hidden; }
 .rrun h1 { font-size: 28px; }
 .rrun-text { margin: 0; font-size: 24px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; white-space: pre-wrap; }
 .prayer-text { white-space: pre-wrap; font-size: 20px; line-height: 1.55; letter-spacing: -0.01em; }
+
+/* Settings → Appearance → Background → Picture */
+.segmented label { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 36px; border-radius: 7px; font-size: 14px; color: var(--text2); }
+.bg-photo-row { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+.bg-thumb { width: 56px; height: 56px; border-radius: 10px; background: center / cover no-repeat; flex: none; box-shadow: inset 0 0 0 1px var(--hair); }

@@ -41,3 +41,15 @@ h1 {
 .muted { color: var(--text2); }
 .danger { color: var(--danger); }
 .hidden { display: none !important; }
+
+/* Background picture: fixed behind everything (also on iPhone, where background-attachment: fixed is ignored). */
+html[data-bg="photo"] { background: var(--bg-base); }
+html[data-bg="photo"] body { background: transparent; }
+html[data-bg="photo"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1;
+  background: var(--bg-photo) center / cover no-repeat;
+}
+html[data-bg="photo"] #app { background: var(--bg); }
+html[data-bg="photo"] #tabbar, html[data-bg="photo"] .navbar, html[data-bg="photo"] #sidebar {
+  background: transparent; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+}

@@ -22,7 +22,7 @@ Screen). Everything stays on your device.
 | **Archive** | Every month as a read-only calendar, and one search across everything. |
 | **Add (+)** | "I did something", "I want this to happen", and links to plan, task, journal, habit, how are you?, dream and ritual. |
 
-Past months are read-only. Categories are shared everywhere and editable. Appearance (theme, accent, background,
+Past months are read-only. Categories are shared everywhere and editable. Appearance (theme, accent, background — a tone or your own picture behind the app,
 font, density, widget style), the four tab-bar slots and which sections show are yours to set.
 
 ## Privacy and your data
