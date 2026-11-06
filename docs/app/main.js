@@ -98,7 +98,12 @@ async function boot() {
 
 // Offline support on the live site (https), and on localhost for testing.
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  window.addEventListener('load', () =>
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+      // A Home Screen app can stay open for days: look for a new version each time it comes back to the front.
+      document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && reg.update().catch(() => {}));
+    }).catch(() => {})
+  );
 }
 
 boot();

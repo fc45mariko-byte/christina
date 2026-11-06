@@ -2,7 +2,7 @@
 // Bump RELEASE whenever app files change so phones pick up the update.
 // Cache names carry this copy's address: Christina can be served from more than one path on the same site
 // (e.g. /christina/ and /bodyoracle/), and those share one cache storage.
-const RELEASE = 'christina-v22';
+const RELEASE = 'christina-v23';
 const VERSION = `${RELEASE} ${self.registration.scope}`;
 /** Ours to remove: older versions at this address, and caches from before addresses were added
  *  (names without a space, e.g. 'christina-v5' or the old app's 'body-oracle-v5'). */
@@ -65,25 +65,42 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's HTTP cache (GitHub Pages lets it keep files 10 minutes), so a new version
+  // never caches old files.
+  event.waitUntil(
+    caches.open(VERSION)
+      .then((cache) => cache.addAll(SHELL.map((url) => new Request(url, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter(isStale).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+      .then(async (keys) => {
+        const stale = keys.filter(isStale);
+        await Promise.all(stale.map((k) => caches.delete(k)));
+        await self.clients.claim();
+        // An update (an older version was here): reload open windows so they show the new version now.
+        if (stale.some((k) => k.endsWith(` ${self.registration.scope}`) || k.startsWith('christina-v'))) {
+          const windows = await self.clients.matchAll({ type: 'window' });
+          windows.forEach((w) => w.navigate(w.url).catch(() => {}));
+        }
+      })
   );
 });
 
-// Network first (so updates arrive), falling back to the cache when offline.
+// Network first (so updates arrive), falling back to the cache when offline. 'no-cache' asks the server each time
+// instead of reusing the browser's copy.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || new URL(event.request.url).origin !== location.origin) return;
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-cache' })
       .then((response) => {
-        const copy = response.clone();
-        caches.open(VERSION).then((cache) => cache.put(event.request, copy));
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(VERSION).then((cache) => cache.put(event.request, copy));
+        }
         return response;
       })
       .catch(() => caches.match(event.request).then((hit) => hit || caches.match('index.html')))
