@@ -1,12 +1,14 @@
 /* Habits: routines with a daily or weekly rhythm, check-ins, history and streaks.
  * Stores:
  *   habits     { id, name, frequency ('daily'|'weekly'), target (check-ins per week, weekly habits),
- *                categoryId, color, archived, order, createdAt, updatedAt }
+ *                categoryId, color, startDate ('YYYY-MM-DD', optional: when you began), archived, order,
+ *                createdAt, updatedAt }
  *   habitLogs  { id: '<habitId>:<YYYY-MM-DD>', habitId, date, createdAt, updatedAt } — one row per check-in day,
  *              so history is never overwritten.
  * Streaks: a daily habit counts consecutive days with a check-in (today may still be open); a weekly habit counts
  * consecutive weeks that reached the target (this week may still be open).
- * Check-ins can be changed for any day of the current month; earlier months are read-only. */
+ * Check-ins can be changed for any day of the current month; earlier months are read-only. The one exception: when you
+ * set or move a habit's start date, you can mark every day from that date until today as done in one step. */
 import { esc, uuid, ymd, parseYMD, addDays, monthKeyOf, F, currentMonth } from '../../core/util.js';
 import { data } from '../../core/db.js';
 import { categoryById } from '../../core/queries.js';
@@ -14,7 +16,7 @@ import { THREAD_COLORS } from '../../core/catalog.js';
 import { state, push, back } from '../../core/state.js';
 import { render } from '../../core/render.js';
 import { register, registry } from '../../core/registry.js';
-import { putItem, removeItems } from '../../core/repo.js';
+import { putItem, putItems, removeItems } from '../../core/repo.js';
 import { DB } from '../../core/db.js';
 import { icon } from '../../ui/icons.js';
 import { navbar, chips, swatches, toast, fail } from '../../ui/components.js';
@@ -80,6 +82,7 @@ function habitStats(h) {
   for (let i = 0; i < 30; i++) if (days.has(ymd(addDays(today, -i)))) hit++;
   return { current, longest, rate: hit / 30, unit: 'day' };
 }
+const sinceText = (h) => (h.startDate ? `Since ${F.dayMonth.format(parseYMD(h.startDate))}${h.startDate.slice(0, 4) === String(new Date().getFullYear()) ? '' : `, ${h.startDate.slice(0, 4)}`}` : '');
 const streakText = (s) => (s.current ? `${s.current}-${s.unit} streak` : 'No streak yet');
 
 /** Habit line with today's check: used by Habits and the Overview widget. */
@@ -140,7 +143,7 @@ function viewHabit(id) {
   const total = daysOf(h).size;
   return `${navbar('', `<button class="nav-btn" data-action="editHabit" data-id="${esc(h.id)}">Edit</button>`)}
   <div class="page">
-    <div class="row-field" style="justify-content:flex-start;gap:8px"><span class="dot" style="background:#${esc(habitHex(h))};width:14px;height:14px"></span><span class="label">${h.frequency === 'weekly' ? `${h.target || 1} × a week` : 'Every day'}${h.archived ? ' · Archived' : ''}</span></div>
+    <div class="row-field" style="justify-content:flex-start;gap:8px"><span class="dot" style="background:#${esc(habitHex(h))};width:14px;height:14px"></span><span class="label">${h.frequency === 'weekly' ? `${h.target || 1} × a week` : 'Every day'}${h.startDate ? ` · ${esc(sinceText(h))}` : ''}${h.archived ? ' · Archived' : ''}</span></div>
     <h1>${esc(h.name)}</h1>
     <div class="stats">
       <div class="stat"><span class="caption">Current streak</span><b>${s.current}</b><span class="caption">${s.unit === 'week' ? 'weeks' : 'days'}</span></div>
@@ -164,6 +167,8 @@ function newHabitForm(h) {
     categoryId: h ? h.categoryId || null : null,
     categoryOptional: true,
     color: h ? h.color || THREAD_COLORS[4] : THREAD_COLORS[4],
+    startDate: h ? h.startDate || '' : '',
+    fill: false,
   };
 }
 
@@ -182,9 +187,31 @@ function viewHabitEdit() {
           : ''
       }
     </div>
+    <div class="section"><span class="label">Started on (optional)</span>
+      <input class="field" type="date" data-bind="hf.startDate" data-rerender="1" value="${esc(f.startDate)}" max="${ymd(new Date())}">
+      ${
+        f.startDate && f.startDate < ymd(new Date())
+          ? `<div class="field row-field"><span>Mark every day from then until today as done</span><label class="toggle"><input type="checkbox" data-bind="hf.fill" data-rerender="1" ${f.fill ? 'checked' : ''} aria-label="Mark every day from the start date until today as done"><span></span></label></div>
+             <span class="caption">${f.fill ? `${daysBetween(f.startDate) + 1} days will be checked in, including days in earlier months.` : 'Leave off to only note the date.'}</span>`
+          : ''
+      }
+    </div>
     <div class="section"><span class="label">Colour</span>${swatches('hf', f.color, colors)}</div>
     <div class="section"><span class="label">Category (optional — tap again to clear)</span>${chips('hf', f.categoryId)}</div>
   </div>`;
+}
+
+const daysBetween = (from) => Math.round((parseYMD(ymd(new Date())) - parseYMD(from)) / 864e5);
+
+/** Check-ins for every day from `from` until today that are not there yet. */
+function fillLogs(habitId, from) {
+  const out = [];
+  const today = ymd(new Date());
+  for (let d = parseYMD(from); ymd(d) <= today; d = addDays(d, 1)) {
+    const day = ymd(d);
+    if (!isDone(habitId, day)) out.push({ id: logId(habitId, day), habitId, date: day });
+  }
+  return out;
 }
 
 async function toggleHabit(id, day) {
@@ -234,9 +261,14 @@ register({
         target: f.frequency === 'weekly' ? f.target : 1,
         categoryId: f.categoryId || null,
         color: f.color,
+        startDate: f.startDate && f.startDate <= ymd(new Date()) ? f.startDate : null,
       };
       try {
         await putItem('habits', habit);
+        if (f.fill && habit.startDate) {
+          const logs = fillLogs(habit.id, habit.startDate);
+          if (logs.length) await putItems('habitLogs', logs);
+        }
       } catch (error) {
         return fail(error, 'save this habit');
       }

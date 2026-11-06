@@ -12,7 +12,7 @@ Screen). Everything stays on your device.
 | **Calendar** | Day, week and month. Thread bars, record dots, plans (rings) and tasks due (squares). Plans with times and in-app reminders. |
 | **Journal** | Entries, dreams and signs: dated, with optional title, photos, category, tags, thread and theme; links to other records; type and tag filters, search. |
 | **Tasks** | Due dates, priority, category, project; Overdue / Today / Upcoming / No date; done list. |
-| **Habits** | Daily or times-a-week habits, check-ins, current and longest streaks, 16-week history. |
+| **Habits** | Daily or times-a-week habits with an optional start date (and "mark every day since then as done"), check-ins, current and longest streaks, 16-week history. |
 | **Projects** | Milestones, tasks and progress; an optional thread whose records show on the project. |
 | **Insights** | Counts over 4 weeks, 3 months or 12 months; habits, states, rituals done; "recorded together" by days. Every bar opens its records. |
 | **Threads** | Spans of time in your life, drawn as bars on the calendar when they have dates. |
