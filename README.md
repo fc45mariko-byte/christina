@@ -10,14 +10,14 @@ Screen). Everything stays on your device.
 |---|---|
 | **Overview** | A dashboard of widgets you arrange: this month, today, reminders, upcoming plans, tasks, habits, projects, journal, how are you?, for tonight, rituals, this week, insights. Presets and saved layouts. |
 | **Calendar** | Day, week and month. Thread bars, record dots, plans (rings) and tasks due (squares). Plans with times and in-app reminders. |
-| **Journal** | Entries, dreams and signs: dated, with optional title, photos, category, tags, thread and theme; links to other records; type and tag filters, search. |
+| **Journal** | Entries, dreams and signs: dated, with optional title, photos and videos, category, tags, thread and theme; links to other records; type and tag filters, search. |
 | **Tasks** | Due dates, priority, category, project; Overdue / Today / Upcoming / No date; done list. |
 | **Habits** | Daily or times-a-week habits with an optional start date (and "mark every day since then as done"), check-ins, current and longest streaks, 16-week history. |
 | **Projects** | Milestones, tasks and progress; an optional thread whose records show on the project. |
 | **Insights** | Counts over 4 weeks, 3 months or 12 months; habits, states, rituals done; "recorded together" by days. Every bar opens its records. |
 | **Threads** | Spans of time in your life, drawn as bars on the calendar when they have dates. |
 | **Rituals** | Rituals (picture, situations, intention, things to prepare, steps, attached prayers) with a guided run that records each time you do one; Prayers to read in a given state; "For tonight" with the moon. |
-| **Themes** | Long-running parts of your inner life ("My body", "Becoming her"). Journal entries, dreams, states and rituals can belong to them. |
+| **Themes** | Long-running parts of your inner life ("My body", "Becoming her"), with a small cover and the pictures of what is in them. Journal entries, dreams, states and rituals can belong to them. |
 | **How are you?** | Your own words for how you are, logged for a day from Overview or +. Edit them in Settings → States. |
 | **Archive** | Every month as a read-only calendar, and one search across everything. |
 | **Add (+)** | "I did something", "I want this to happen", and links to plan, task, journal, habit, how are you?, dream and ritual. |

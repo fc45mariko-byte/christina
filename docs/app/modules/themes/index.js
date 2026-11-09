@@ -13,7 +13,6 @@ import { putItem } from '../../core/repo.js';
 import { icon } from '../../ui/icons.js';
 import { navbar, swatches, recordRow, toast, fail } from '../../ui/components.js';
 import { mediaHTML, addDraftImage, commitDraftImages } from '../../ui/media.js';
-import { ritualCard } from '../rituals/index.js';
 
 const ICONS = ['leaf', 'body', 'heart', 'flower', 'sun', 'star', 'home', 'plane', 'sign', 'mind', 'wave', 'people', 'book', 'money', 'candle', 'key'];
 state.thf = null;
@@ -45,15 +44,17 @@ function viewTheme(id) {
   if (!t) return `${navbar('')}<div class="page"><div class="blank">This theme no longer exists.</div></div>`;
   const records = recordsIn(id);
   const rituals = ritualsIn(id);
+  const pics = records.flatMap((r) => (r.mediaIds || []).filter((m) => String(m).startsWith('media/')).map((m) => [r.id, String(m).slice('media/'.length)]));
   return `${navbar('', `<button class="nav-btn" data-action="editTheme" data-id="${esc(id)}">Edit</button>`)}
   <div class="page">
-    ${t.coverId ? `<div class="photo rhero">${mediaHTML(t.coverId, null, { controls: true })}</div>` : ''}
-    <div class="row-field" style="justify-content:flex-start;gap:8px"><span class="dot" style="background:#${esc(t.color)};width:14px;height:14px"></span><span class="label">Theme</span></div>
-    <h1>${esc(t.name)}</h1>
+    <div class="theme-head">${t.coverId ? `<div class="sq theme-cover">${mediaHTML(t.coverId)}</div>` : ''}
+      <div class="grow"><div class="row-field" style="justify-content:flex-start;gap:8px"><span class="dot" style="background:#${esc(t.color)};width:12px;height:12px"></span><span class="label">Theme</span></div>
+      <h1 style="margin:0">${esc(t.name)}</h1></div></div>
     ${t.description ? `<p style="margin:0;color:var(--text2)">${esc(t.description)}</p>` : ''}
     <span class="caption">${records.length} ${records.length === 1 ? 'record' : 'records'} · ${rituals.length} ${rituals.length === 1 ? 'ritual' : 'rituals'}</span>
     <div class="row-field" style="gap:8px"><button class="btn-secondary" data-action="newJournal" data-theme="${esc(id)}">${icon('plus')} Write in this theme</button></div>
-    ${rituals.length ? `<div class="section"><span class="label">Rituals</span><div class="rgrid">${rituals.map(ritualCard).join('')}</div></div>` : ''}
+    ${pics.length ? `<div class="section"><span class="label">Pictures</span><div class="thumbs">${pics.slice(0, 60).map(([rid, mid]) => `<button class="sq" data-action="openRecord" data-id="${esc(rid)}" aria-label="Open">${mediaHTML(mid)}</button>`).join('')}</div></div>` : ''}
+    ${rituals.length ? `<div class="section"><span class="label">Rituals</span><div class="list">${rituals.map((r) => `<button class="row" data-action="openRitual" data-id="${esc(r.id)}">${r.imageId ? `<span class="sq" style="width:44px;flex:none">${mediaHTML(r.imageId)}</span>` : `<span class="rthumb">${icon('candle')}</span>`}<span class="row-text"><span class="body">${esc(r.name)}</span></span>${icon('right', 'chev')}</button>`).join('')}</div></div>` : ''}
     <div class="section"><span class="label">Records</span>${records.length ? `<div class="list">${records.map((r) => recordRow(r, isPastMonth(recordMonth(r)))).join('')}</div>` : '<span class="muted">Nothing in this theme yet.</span>'}</div>
   </div>`;
 }
@@ -68,7 +69,7 @@ function viewThemeEdit() {
     <div class="section"><span class="label">What it holds (optional)</span><input class="field" type="text" data-bind="thf.description" value="${esc(f.description)}" placeholder="e.g. Intentions · Actions · Identity" autocomplete="off"></div>
     <div class="section"><span class="label">Colour</span>${swatches('thf', f.color, colors)}</div>
     <div class="section"><span class="label">Icon</span><div class="chips">${ICONS.map((n) => `<button class="chip${f.icon === n ? ' on' : ''}" style="${f.icon === n ? `background:#${esc(f.color)}` : ''}" data-action="themeIcon" data-icon="${n}" aria-label="${n}" aria-pressed="${f.icon === n}">${icon(n)}</button>`).join('')}</div></div>
-    <div class="section"><span class="label">Cover picture (optional)</span><div style="max-width:200px"><div class="sq rslot">${f.coverId ? `${mediaHTML(f.coverId, f._blobs)}<button class="remove-x" data-action="themeCover" aria-label="Remove picture">${icon('x')}</button>` : `<label class="add-tile" aria-label="Add a cover picture">${icon('plus')}<input type="file" accept="image/*" data-file-input="themeCover"></label>`}</div></div></div>
+    <div class="section"><span class="label">Cover picture (optional)</span><div style="max-width:200px"><div class="sq rslot">${f.coverId ? `${mediaHTML(f.coverId, f._blobs)}<button class="remove-x" data-action="themeCover" aria-label="Remove picture">${icon('x')}</button>` : `<label class="add-tile" aria-label="Add a cover picture">${icon('plus')}<input type="file" accept="image/*,video/*" data-file-input="themeCover"></label>`}</div></div></div>
     ${f._new ? '' : `<button class="btn-secondary danger" data-action="deleteTheme" data-id="${esc(f.id)}">Delete theme</button><p class="footnote" style="padding:0">Deleting a theme keeps everything that was in it.</p>`}
   </div>`;
 }

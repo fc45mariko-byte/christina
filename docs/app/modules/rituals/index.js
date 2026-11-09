@@ -185,7 +185,7 @@ function viewProduct(rid, pid) {
 const newStep = (text = '') => ({ id: uuid(), text, note: '', imageId: null, productId: null, prayerId: null, sound: '', duration: '', check: false });
 
 function imageSlot(id, draft, action, attrs = '', label = 'Add a picture') {
-  return `<div class="sq rslot">${id ? `${mediaHTML(id, draft._blobs)}<button class="remove-x" data-action="${action}" data-op="remove" ${attrs} aria-label="Remove picture">${icon('x')}</button>` : `<label class="add-tile" aria-label="${label}">${icon('plus')}<input type="file" accept="image/*" data-file-input="${action}" ${attrs}></label>`}</div>`;
+  return `<div class="sq rslot">${id ? `${mediaHTML(id, draft._blobs)}<button class="remove-x" data-action="${action}" data-op="remove" ${attrs} aria-label="Remove picture">${icon('x')}</button>` : `<label class="add-tile" aria-label="${label}">${icon('plus')}<input type="file" accept="image/*,video/*" data-file-input="${action}" ${attrs}></label>`}</div>`;
 }
 
 function situationPicker(form, d) {

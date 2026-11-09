@@ -1,4 +1,5 @@
 /* Settings: appearance, calendar, categories, data & export, privacy, about. */
+import { RELEASE } from '../../version.js';
 import { esc } from '../../core/util.js';
 import { prefs, Settings } from '../../core/prefs.js';
 import { data } from '../../core/db.js';
@@ -104,7 +105,7 @@ function viewPrivacy() {
 function viewAbout() {
   return `${navbar('About')}<div class="page tight">
     <h1>Christina</h1>
-    <span class="label">Version 2.0</span>
+    <span class="label">Version 2.0 · ${RELEASE.replace('christina-v', 'update ')}</span>
     <p style="margin-top:16px">A visual system for seeing life accumulate over time.</p>
     <p style="margin:0">With Journal, Rituals, Themes, Calendar, Tasks, Projects, Habits and Insights.</p>
     <p style="margin:0">What actually happened?</p>

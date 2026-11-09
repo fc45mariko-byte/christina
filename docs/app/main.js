@@ -1,5 +1,6 @@
 /* Christina — a visual system for seeing life accumulate over time.
  * Boot: register modules, open the on-device database, render. */
+import { RELEASE } from './version.js';
 import { esc, $ } from './core/util.js';
 import { DB, data } from './core/db.js';
 import { state, back } from './core/state.js';
@@ -96,6 +97,23 @@ async function boot() {
   });
 }
 
+/** If the server has a newer version than the one running, drop the stored app files and reload.
+ *  Only the app's own files are dropped; everything you saved (IndexedDB, settings) stays. Once per version. */
+async function checkVersion() {
+  try {
+    const res = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const { release } = await res.json();
+    if (!release || release === RELEASE || sessionStorage.getItem('christina.updatedTo') === release) return;
+    sessionStorage.setItem('christina.updatedTo', release);
+    if (navigator.serviceWorker) await Promise.all((await navigator.serviceWorker.getRegistrations()).map((r) => r.unregister()));
+    if (window.caches) await Promise.all((await caches.keys()).filter((k) => k.startsWith('christina-v')).map((k) => caches.delete(k)));
+    location.reload();
+  } catch {
+    /* offline: keep the version we have */
+  }
+}
+
 // Offline support on the live site (https), and on localhost for testing.
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () =>
@@ -105,5 +123,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
     }).catch(() => {})
   );
 }
+window.addEventListener('load', checkVersion);
+document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && checkVersion());
 
 boot();

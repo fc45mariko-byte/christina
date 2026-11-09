@@ -355,3 +355,11 @@ img[data-file]:not([src]) { visibility: hidden; }
 .segmented label { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 36px; border-radius: 7px; font-size: 14px; color: var(--text2); }
 .bg-photo-row { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
 .bg-thumb { width: 56px; height: 56px; border-radius: 10px; background: center / cover no-repeat; flex: none; box-shadow: inset 0 0 0 1px var(--hair); }
+
+/* Themes: small cover beside the name, and small pictures */
+.theme-head { display: flex; align-items: center; gap: 12px; }
+.theme-cover { width: 64px; flex: none; }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
+.thumbs .sq { border-radius: 6px; padding: 0; }
+.sq video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.play-badge { position: absolute; left: 6px; bottom: 6px; width: 0; height: 0; border-style: solid; border-width: 7px 0 7px 12px; border-color: transparent transparent transparent #fff; filter: drop-shadow(0 0 2px rgba(0,0,0,.6)); pointer-events: none; }

@@ -151,8 +151,8 @@ function viewEdit() {
     <div class="section"><span class="label">Entry</span>
       <textarea class="field" data-bind="jf.text" style="min-height:220px" placeholder="What happened, what you think about it">${esc(f.text)}</textarea>
     </div>
-    <div class="section"><span class="label">Photos (optional)</span>
-      <div class="img-grid">${f.photos.map((id, i) => `<div class="sq">${mediaHTML(id, f._blobs)}<button class="remove-x" data-action="removeJournalPhoto" data-i="${i}" aria-label="Remove photo">${icon('x')}</button></div>`).join('')}${f.photos.length < MAX_PHOTOS ? `<label class="sq add-tile" aria-label="Add photos">${icon('plus')}<input type="file" accept="image/*" multiple data-file-input="journalPhotos"></label>` : ''}</div>
+    <div class="section"><span class="label">Photos and videos (optional)</span>
+      <div class="img-grid">${f.photos.map((id, i) => `<div class="sq">${mediaHTML(id, f._blobs)}<button class="remove-x" data-action="removeJournalPhoto" data-i="${i}" aria-label="Remove photo">${icon('x')}</button></div>`).join('')}${f.photos.length < MAX_PHOTOS ? `<label class="sq add-tile" aria-label="Add photos">${icon('plus')}<input type="file" accept="image/*,video/*" multiple data-file-input="journalPhotos"></label>` : ''}</div>
     </div>
     <div class="section"><span class="label">Category (optional — tap again to clear)</span>${chips('jf', f.categoryId)}</div>
     ${themes.length ? `<div class="section"><span class="label">Theme (optional)</span><select class="field" data-bind="jf.themeId"><option value="">None</option>${themes.map((t) => `<option value="${esc(t.id)}" ${f.themeId === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>` : ''}

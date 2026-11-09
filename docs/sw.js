@@ -2,7 +2,7 @@
 // Bump RELEASE whenever app files change so phones pick up the update.
 // Cache names carry this copy's address: Christina can be served from more than one path on the same site
 // (e.g. /christina/ and /bodyoracle/), and those share one cache storage.
-const RELEASE = 'christina-v23';
+const RELEASE = 'christina-v26';
 const VERSION = `${RELEASE} ${self.registration.scope}`;
 /** Ours to remove: older versions at this address, and caches from before addresses were added
  *  (names without a space, e.g. 'christina-v5' or the old app's 'body-oracle-v5'). */
@@ -62,6 +62,7 @@ const SHELL = [
   'app/ui/media.js',
   'app/ui/moon.js',
   'app/ui/tokens.css',
+  'app/version.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -90,19 +91,21 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Network first (so updates arrive), falling back to the cache when offline. 'no-cache' asks the server each time
-// instead of reusing the browser's copy.
+// Network first (so updates arrive), falling back to the cache when offline. Page loads go out as they are (Safari
+// refuses a page request rebuilt with options); other files ask the server each time instead of the browser's copy.
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || new URL(event.request.url).origin !== location.origin) return;
+  const req = event.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const fresh = () => (req.mode === 'navigate' ? fetch(req) : fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).catch(() => fetch(req)));
   event.respondWith(
-    fetch(event.request, { cache: 'no-cache' })
+    fresh()
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
-          caches.open(VERSION).then((cache) => cache.put(event.request, copy));
+          caches.open(VERSION).then((cache) => cache.put(req, copy));
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then((hit) => hit || caches.match('index.html')))
+      .catch(() => caches.match(req).then((hit) => hit || caches.match('index.html')))
   );
 });
