@@ -1,4 +1,5 @@
 /* Settings: appearance, calendar, categories, data & export, privacy, about. */
+import { readCalendarFile, importPlans } from '../../services/ics.js';
 import { RELEASE } from '../../version.js';
 import { esc } from '../../core/util.js';
 import { prefs, Settings } from '../../core/prefs.js';
@@ -6,7 +7,7 @@ import { data } from '../../core/db.js';
 import { push } from '../../core/state.js';
 import { render } from '../../core/render.js';
 import { register } from '../../core/registry.js';
-import { navbar, catIcon, settingsRow, toast } from '../../ui/components.js';
+import { navbar, catIcon, settingsRow, toast, fail } from '../../ui/components.js';
 import { icon } from '../../ui/icons.js';
 import { exportBackup, exportEventsCSV, readBackup, restoreBackup, eraseEverything } from '../../services/backup.js';
 import { readOracleBackup, importOracleBackup } from '../../services/oracle-import.js';
@@ -125,10 +126,11 @@ function viewData() {
     </div>
     <div class="settings-list">
       <label class="settings-row file-btn">${icon('share', 'ic')}<span class="grow">Restore from a backup</span><input type="file" accept="application/json,.json" data-file-input="restoreBackup"></label>
+      <label class="settings-row file-btn">${icon('calendar', 'ic')}<span class="grow">Import a calendar</span><span class="label">.ics</span><input type="file" accept=".ics,text/calendar" data-file-input="importCalendar"></label>
       <label class="settings-row file-btn">${icon('prayer', 'ic')}<span class="grow">Import from the Body Oracle app</span><input type="file" accept="application/json,.json" data-file-input="importOracle"></label>
       <button class="settings-row" data-action="eraseEverything">${icon('x', 'ic')}<span class="grow danger">Erase everything</span></button>
     </div>
-    <p class="footnote">Restoring replaces everything on this device with the backup. Importing from the Body Oracle app adds its entries, rituals, prayers, states and themes, and changes nothing else. Erasing deletes everything Christina holds on this device. All of them ask first.</p>
+    <p class="footnote">Restoring replaces everything on this device with the backup. Importing a calendar adds its events as plans (importing the same file again updates them). Importing from the Body Oracle app adds its entries, rituals, prayers, states and themes, and changes nothing else. Erasing deletes everything Christina holds on this device. All of them ask first.</p>
     <p class="footnote">The backup holds every event, thread, month, photo and setting (${plural(data.records.length, 'event', 'events')}, ${plural(data.threads.length, 'thread', 'threads')}, ${plural(photos + images, 'photo', 'photos')}). The CSV lists events only, for spreadsheets. Both are saved as files you choose where to keep. All data stays on this device.</p>
   </div>`;
 }
@@ -170,6 +172,24 @@ register({
         return;
       }
       location.reload();
+    },
+    async importCalendar(files) {
+      let read;
+      try {
+        read = await readCalendarFile(files[0]);
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+      const span = read.first === read.last ? read.first : `${read.first} → ${read.last}`;
+      if (!confirm(`Add ${read.added} plans to the Calendar${read.updated ? ` and update ${read.updated}` : ''} (${span})? Nothing already there is removed.`)) return;
+      try {
+        await importPlans(read.plans);
+      } catch (error) {
+        return fail(error, 'import this calendar');
+      }
+      toast(`${read.plans.length} plans in the Calendar`);
+      render();
     },
     async restoreBackup(files) {
       let backup;

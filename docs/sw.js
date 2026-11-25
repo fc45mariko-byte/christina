@@ -2,7 +2,7 @@
 // Bump RELEASE whenever app files change so phones pick up the update.
 // Cache names carry this copy's address: Christina can be served from more than one path on the same site
 // (e.g. /christina/ and /bodyoracle/), and those share one cache storage.
-const RELEASE = 'christina-v26';
+const RELEASE = 'christina-v27';
 const VERSION = `${RELEASE} ${self.registration.scope}`;
 /** Ours to remove: older versions at this address, and caches from before addresses were added
  *  (names without a space, e.g. 'christina-v5' or the old app's 'body-oracle-v5'). */
@@ -50,6 +50,7 @@ const SHELL = [
   'app/modules/themes/index.js',
   'app/modules/threads/index.js',
   'app/services/backup.js',
+  'app/services/ics.js',
   'app/services/media.js',
   'app/services/oracle-import.js',
   'app/services/search.js',
